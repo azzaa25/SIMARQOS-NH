@@ -28,8 +28,13 @@ class UserApprovalController extends Controller
     public function reject($id)
     {
         $user = User::findOrFail($id);
-        $user->update(['status' => 'nonaktif']);
+        
+        // Simpan nama untuk pesan notifikasi sebelum dihapus
+        $namaUser = $user->nama;
+        
+        // Langsung hapus dari database
+        $user->delete();
 
-        return back()->with('success', 'Akun ditolak');
+        return back()->with('success', 'Pendaftaran ' . $namaUser . ' telah ditolak dan dihapus dari sistem');
     }
 }

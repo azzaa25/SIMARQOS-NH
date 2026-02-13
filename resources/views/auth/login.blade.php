@@ -10,19 +10,82 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f8fafc; }
-        .bg-custom-green { background-color: #147a54; }
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            background: #f1f5f9; 
+            overflow: hidden; 
+        }
+
+        /* --- Animasi Latar Belakang Dipertajam --- */
+        .bg-animated {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            background: #f8fafc;
+            overflow: hidden;
+        }
+
+        .blob {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(20, 122, 84, 0.45) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            filter: blur(50px);
+            animation: move 20s infinite alternate ease-in-out;
+        }
+
+        .blob-1 { top: -200px; left: -100px; }
+        .blob-2 { bottom: -200px; right: -100px; background: radial-gradient(circle, rgba(37, 99, 235, 0.2) 0%, rgba(255, 255, 255, 0) 70%); animation-delay: -5s; }
+        .blob-3 { top: 30%; left: 40%; width: 500px; height: 500px; background: radial-gradient(circle, rgba(16, 185, 129, 0.3) 0%, rgba(255, 255, 255, 0) 70%); animation-duration: 15s; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            100% { transform: translate(150px, 100px) scale(1.2) rotate(15deg); }
+        }
+
+        /* --- Style Card Glassmorphism --- */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+        }
+
         .text-custom-green { color: #147a54; }
         .input-transition { transition: all 0.2s ease-in-out; }
         
         .swal2-popup { border-radius: 32px !important; padding: 2em !important; }
         .swal2-confirm { border-radius: 99px !important; padding: 12px 35px !important; font-weight: 800 !important; font-size: 14px !important; text-transform: uppercase !important; letter-spacing: 1px !important; }
+        
+        .animate-fadeInCustom {
+            animation: fadeIn 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 
 <body class="flex items-center justify-center min-h-screen p-4">
 
-<div class="bg-white w-full max-w-[450px] rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-50 p-8 md:p-12 text-center">
+<div class="bg-animated">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+</div>
+
+<div class="fixed bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.08] flex items-end overflow-hidden text-left">
+    <svg class="w-full h-auto min-w-[1200px]" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M0 300H1200V180C1150 180 1120 150 1100 120C1080 150 1050 180 1000 180V100C1000 80 980 60 960 60H940C920 60 900 80 900 100V180C850 180 820 200 800 230C780 200 750 180 700 180V50C700 22.3858 677.614 0 650 0H550C522.386 0 500 22.3858 500 50V180C450 180 420 200 400 230C380 200 350 180 300 180V100C300 80 280 60 260 60H240C220 60 200 80 200 100V180C150 180 120 150 100 120C80 150 50 180 0 180V300Z" fill="#147a54"/>
+    </svg>
+</div>
+
+<div class="glass-card w-full max-w-[450px] rounded-[40px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] p-8 md:p-12 text-center animate-fadeInCustom relative z-10">
 
     <div class="flex flex-col items-center mb-8">
         <div class="w-16 h-16 bg-green-50 rounded-2xl flex items-center justify-center mb-4 shadow-inner text-custom-green">
@@ -34,22 +97,22 @@
         <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight leading-tight">
             Selamat Datang 
         </h1>
-        <p class="text-gray-400 text-sm mt-2 font-medium italic leading-relaxed">
-            Sistem Manajemen Masjid Nurul Huda
+        <p class="text-gray-500 text-sm mt-2 font-medium italic leading-relaxed uppercase tracking-widest">
+            Sistem Manajemen Arisan Qurban
         </p>
     </div>
 
     @if ($errors->any())
-        <div class="mb-6 rounded-2xl bg-red-50 border border-red-100 p-4 text-left animate-fadeIn">
+        <div class="mb-6 rounded-2xl bg-red-100/80 backdrop-blur-sm border border-red-200 p-4 text-left shadow-sm">
             <div class="flex items-center gap-2 mb-2 text-red-700">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                <svg class="w-4 h-4 font-black" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <span class="text-xs font-black uppercase tracking-widest">Terjadi Kesalahan</span>
+                <span class="text-[10px] font-black uppercase tracking-widest">Akses Ditolak</span>
             </div>
-            <ul class="list-disc list-inside space-y-1 text-[13px] text-red-600 font-semibold">
+            <ul class="list-none space-y-1 text-[12px] text-red-600 font-bold">
                 @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
+                    <li>• {{ $error }}</li>
                 @endforeach
             </ul>
         </div>
@@ -61,7 +124,7 @@
         <div class="space-y-1.5">
             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat Email</label>
             <input type="email" name="email" placeholder="Email Anda" required
-                class="input-transition w-full px-5 py-4 bg-gray-50 border @error('email') border-red-300 @else border-gray-200 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-sm font-semibold">
+                class="input-transition w-full px-5 py-4 bg-white border @error('email') border-red-300 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-sm font-semibold text-gray-700">
         </div>
 
         <div class="space-y-1.5">
@@ -69,7 +132,7 @@
                 <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest">Kata Sandi</label>
             </div>
             <input type="password" name="password" placeholder="••••••••" required
-                class="input-transition w-full px-5 py-4 bg-gray-50 border @error('password') border-red-300 @else border-gray-200 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-sm font-semibold">
+                class="input-transition w-full px-5 py-4 bg-white border @error('password') border-red-300 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-sm font-semibold text-gray-700">
         </div>
 
         <div class="pt-4">
@@ -87,7 +150,6 @@
 </div>
 
 <script>
-    // Pop-up hanya untuk Pesan Sukses agar tidak double dengan alert box di atas
     @if(session('success'))
         Swal.fire({
             icon: 'success',
