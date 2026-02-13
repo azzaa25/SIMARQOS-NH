@@ -1,7 +1,7 @@
 @extends('admin.layout.app')
 
 @section('content')
-<div class="max-w-5xl mx-auto h-full flex flex-col justify-center">
+<div class="max-w-5xl mx-auto h-full flex flex-col justify-center animate-fadeIn">
     {{-- BREADCRUMB & HEADER RINGKAS --}}
     <div class="flex justify-between items-end mb-3">
         <div>
@@ -34,26 +34,30 @@
                     <div class="space-y-1">
                         <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Nama Lengkap</label>
                         <input type="text" name="nama" value="{{ old('nama', $peserta->nama) }}" required placeholder="Sesuai KTP"
-                               class="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium">
+                               class="w-full px-4 py-2 bg-gray-50 border @error('nama') border-red-400 @else border-gray-100 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium text-gray-700">
+                        @error('nama') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div class="space-y-1">
                             <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Nomor WhatsApp</label>
                             <input type="text" name="no_hp" value="{{ old('no_hp', $peserta->no_hp) }}" required placeholder="0812xxxx"
-                                   class="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium">
+                                   class="w-full px-4 py-2 bg-gray-50 border @error('no_hp') border-red-400 @else border-gray-100 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium text-gray-700">
+                            @error('no_hp') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
                         <div class="space-y-1">
                             <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Email Sistem</label>
                             <input type="email" name="email" value="{{ old('email', $peserta->user->email ?? '') }}" required placeholder="email@gmail.com"
-                                   class="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium">
+                                   class="w-full px-4 py-2 bg-gray-50 border @error('email') border-red-400 @else border-gray-100 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium text-gray-700">
+                            @error('email') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
                     <div class="space-y-1">
                         <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Alamat Domisili</label>
                         <textarea name="alamat" rows="2" required placeholder="Alamat lengkap..."
-                                  class="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium resize-none">{{ old('alamat', $peserta->alamat) }}</textarea>
+                                  class="w-full px-4 py-2 bg-gray-50 border @error('alamat') border-red-400 @else border-gray-100 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm transition-all font-medium resize-none text-gray-700">{{ old('alamat', $peserta->alamat) }}</textarea>
+                        @error('alamat') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
@@ -70,13 +74,14 @@
                         <div class="space-y-1">
                             <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Skema Qurban</label>
                             <select name="id_skema" required
-                                    class="w-full px-4 py-2 bg-gray-50 border border-gray-100 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-medium transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_1rem_center] bg-no-repeat">
+                                    class="w-full px-4 py-2 bg-gray-50 border @error('id_skema') border-red-400 @else border-gray-100 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-medium transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1rem_1rem] bg-[right_1rem_center] bg-no-repeat">
                                 @foreach($skemas as $skema)
                                     <option value="{{ $skema->id_skema }}" {{ old('id_skema', $peserta->id_skema) == $skema->id_skema ? 'selected' : '' }}>
                                         {{ $skema->nama_skema }}
                                     </option>
                                 @endforeach
                             </select>
+                            @error('id_skema') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="space-y-1">
@@ -91,6 +96,7 @@
                                     <span class="text-[11px] font-black text-gray-400 group-hover:text-green-700 group-[.has-[:checked]]:text-green-700 tracking-widest">AKTIF</span>
                                 </label>
                             </div>
+                            @error('status') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
                     </div>
 
@@ -111,7 +117,6 @@
     </div>
 </div>
 
-{{-- POPUP KONFIRMASI (SWEETALERT2) --}}
 <script>
     function confirmUpdate() {
         Swal.fire({

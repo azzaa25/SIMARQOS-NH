@@ -16,12 +16,16 @@ class User extends Authenticatable
     // PRIMARY KEY CUSTOM
     protected $primaryKey = 'id_user';
 
+    public $incrementing = true;
+    protected $keyType = 'int';
+
     // MASS ASSIGNMENT
     protected $fillable = [
         'nama',
         'email',
         'password',
-        'role'
+        'role',
+        'status'
     ];
 
     // DATA YANG DISEMBUNYIKAN

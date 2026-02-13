@@ -10,7 +10,6 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
-
 class AuthController extends Controller
 {
     /* =======================
@@ -22,14 +21,11 @@ class AuthController extends Controller
     }
 
     /* =======================
-
         FORM REGISTER
     ======================== */
     public function registerForm()
     {
-        // AMBIL DATA SKEMA UNTUK DROPDOWN
         $skemas = SkemaArisan::orderBy('nama_skema')->get();
-
         return view('auth.register', compact('skemas'));
     }
 
@@ -52,10 +48,22 @@ class AuthController extends Controller
         );
 
         if (Auth::attempt($request->only('email', 'password'))) {
+
+            $user = Auth::user();
+
+            // 🔥 CEK STATUS USER
+            if ($user->status !== 'aktif') {
+
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'Akun Anda masih menunggu konfirmasi admin.'
+                ]);
+            }
+
             $request->session()->regenerate();
 
-            // REDIRECT SESUAI ROLE
-            return match (Auth::user()->role) {
+            return match ($user->role) {
                 'admin'   => redirect()->route('admin.dashboard'),
                 'peserta' => redirect()->route('peserta.dashboard'),
                 default   => redirect()->route('login'),
@@ -63,7 +71,7 @@ class AuthController extends Controller
         }
 
         return back()->withErrors([
-            'email' => 'Email atau password salah'
+            'email' => 'Email atau password yang Anda masukkan salah.'
         ]);
     }
 
@@ -91,33 +99,32 @@ class AuthController extends Controller
                 'password.confirmed' => 'Konfirmasi password tidak sesuai',
                 'no_hp.required'     => 'Nomor HP wajib diisi',
                 'alamat.required'    => 'Alamat wajib diisi',
-                'id_skema.required'  => 'Skema qurban wajib dipilih',
+                'id_skema.required'  => 'Skema arisan wajib dipilih',
                 'id_skema.exists'    => 'Skema tidak valid',
             ]
         );
 
-        // SIMPAN USER
+        // ✅ SIMPAN USER (STATUS OTOMATIS PENDING)
         $user = User::create([
             'nama'     => $request->nama,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
-            'role'     => 'peserta'
+            'role'     => 'peserta',
+            'status'   => 'pending'
         ]);
 
-        // SIMPAN PESERTA ARISAN
+        // ✅ SIMPAN DATA PESERTA (TANPA STATUS)
         PesertaArisan::create([
-            'id_user' => $user->id_user,
-            'id_skema'=> $request->id_skema,
-            'nama'    => $request->nama,
-            'alamat'  => $request->alamat,
-            'no_hp'   => $request->no_hp,
-            'status'  => 'aktif'
+            'id_user'  => $user->id_user,
+            'id_skema' => $request->id_skema,
+            'nama'     => $request->nama,
+            'alamat'   => $request->alamat,
+            'no_hp'    => $request->no_hp,
         ]);
 
-        // AUTO LOGIN
-        Auth::login($user);
-
-        return redirect()->route('peserta.dashboard');
+        // ❌ TIDAK AUTO LOGIN
+        return redirect()->route('login')
+            ->with('success', 'Registrasi berhasil! Tunggu admin konfirmasi sebelum login.');
     }
 
     /* =======================

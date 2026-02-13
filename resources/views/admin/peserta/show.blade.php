@@ -42,7 +42,7 @@
                     <p class="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-1">ID Peserta: #{{ str_pad($peserta->id_pesertaarisan, 4, '0', STR_PAD_LEFT) }}</p>
                     
                     <div class="mt-6">
-                        @if(strtolower($peserta->status) == 'aktif')
+                        @if($peserta->user->status == 'aktif')
                             <span class="px-6 py-2 text-[10px] font-black rounded-full tracking-widest border-2 bg-blue-50 text-blue-600 border-blue-100 shadow-sm shadow-blue-900/10">
                                 AKTIF
                             </span>

@@ -12,21 +12,24 @@ use Illuminate\Support\Facades\Hash;
 class PesertaArisanController extends Controller
 {
     /* =========================
-        LIST PESERTA DENGAN SEARCH & FILTER
+        LIST PESERTA
+        (HANYA AKTIF & NONAKTIF)
     ========================== */
     public function index(Request $request)
     {
-        $query = PesertaArisan::with(['user', 'skemaArisan']);
+        $query = PesertaArisan::with(['user', 'skemaArisan'])
+            ->whereHas('user', function ($q) {
+                $q->whereIn('status', ['aktif', 'nonaktif']);
+            });
 
-        $search = $request->input('search'); // nama/alamat/no_hp
-        $skema  = $request->input('skema');  // id_skema
+        $search = $request->input('search');
+        $skema  = $request->input('skema');
 
-        // Terapkan filter hanya jika ada input
         if ($search) {
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
-                ->orWhere('alamat', 'like', "%{$search}%")
-                ->orWhere('no_hp', 'like', "%{$search}%");
+                  ->orWhere('alamat', 'like', "%{$search}%")
+                  ->orWhere('no_hp', 'like', "%{$search}%");
             });
         }
 
@@ -34,10 +37,8 @@ class PesertaArisanController extends Controller
             $query->where('id_skema', $skema);
         }
 
-        // Pagination
         $pesertas = $query->orderBy('id_pesertaarisan', 'desc')->paginate(10);
-
-        $skemas = SkemaArisan::orderBy('nama_skema')->get();
+        $skemas   = SkemaArisan::orderBy('nama_skema')->get();
 
         return view('admin.peserta.index', compact('pesertas', 'skemas'));
     }
@@ -49,12 +50,13 @@ class PesertaArisanController extends Controller
     public function create()
     {
         $skemas = SkemaArisan::orderBy('nama_skema')->get();
-
         return view('admin.peserta.create', compact('skemas'));
     }
 
+
     /* =========================
         SIMPAN PESERTA
+        (ADMIN LANGSUNG AKTIF)
     ========================== */
     public function store(Request $request)
     {
@@ -65,24 +67,35 @@ class PesertaArisanController extends Controller
             'no_hp'    => 'required',
             'alamat'   => 'required',
             'id_skema' => 'required|exists:skema_arisan,id_skema',
+        ], [
+            // Pesan Error Kustom
+            'nama.required'     => 'Nama lengkap wajib diisi.',
+            'email.required'    => 'Alamat email wajib diisi.',
+            'email.email'       => 'Format email tidak valid.',
+            'email.unique'      => 'Email sudah terdaftar di sistem.',
+            'password.required' => 'Password wajib diisi.',
+            'password.min'      => 'Password terlalu pendek, minimal harus 8 karakter.',
+            'id_skema.required' => 'Silakan pilih paket arisan.',
+            'no_hp.required'    => 'Nomor WhatsApp wajib diisi.',
+            'alamat.required'   => 'Alamat domisili wajib diisi.',
         ]);
 
-        // BUAT USER
+        // ✅ BUAT USER (STATUS AKTIF)
         $user = User::create([
             'nama'     => $request->nama,
             'email'    => $request->email,
             'password' => Hash::make($request->password),
             'role'     => 'peserta',
+            'status'   => 'aktif',
         ]);
 
-        // BUAT PESERTA ARISAN
+        // ✅ BUAT PESERTA
         PesertaArisan::create([
             'id_user'  => $user->id_user,
             'id_skema' => $request->id_skema,
             'nama'     => $request->nama,
             'alamat'   => $request->alamat,
             'no_hp'    => $request->no_hp,
-            'status'   => 'aktif',
         ]);
 
         return redirect()
@@ -90,8 +103,9 @@ class PesertaArisanController extends Controller
             ->with('success', 'Peserta berhasil ditambahkan');
     }
 
+
     /* =========================
-        FORM EDIT PESERTA
+        FORM EDIT
     ========================== */
     public function edit($id)
     {
@@ -101,33 +115,38 @@ class PesertaArisanController extends Controller
         return view('admin.peserta.edit', compact('peserta', 'skemas'));
     }
 
+
     /* =========================
         UPDATE PESERTA
+        (UPDATE STATUS DI USERS)
     ========================== */
     public function update(Request $request, $id)
     {
-        $peserta = PesertaArisan::findOrFail($id);
+        $peserta = PesertaArisan::with('user')->findOrFail($id);
 
         $request->validate([
-            'nama'     => 'required|string|max:255',
-            'no_hp'    => 'required',
-            'alamat'   => 'required',
-            'id_skema' => 'required|exists:skema_arisan,id_skema',
-            'status'   => 'required|in:aktif,nonaktif',
+            'nama'   => 'required|string|max:255',
+            'no_hp'  => 'required',
+            'alamat' => 'required',
+            'status' => 'required|in:aktif,nonaktif',
+        ], [
+            'nama.required'   => 'Nama lengkap wajib diisi.',
+            'no_hp.required'  => 'Nomor WhatsApp wajib diisi.',
+            'alamat.required' => 'Alamat domisili wajib diisi.',
         ]);
 
+        // ✅ UPDATE PESERTA
         $peserta->update([
             'nama'     => $request->nama,
             'alamat'   => $request->alamat,
             'no_hp'    => $request->no_hp,
-            'id_skema' => $request->id_skema,
-            'status'   => $request->status,
         ]);
 
-        // UPDATE USER (NAMA SAJA)
+        // ✅ UPDATE USER (TERMASUK STATUS)
         if ($peserta->user) {
             $peserta->user->update([
-                'nama' => $request->nama,
+                'nama'   => $request->nama,
+                'status' => $request->status,
             ]);
         }
 
@@ -136,14 +155,14 @@ class PesertaArisanController extends Controller
             ->with('success', 'Peserta berhasil diperbarui');
     }
 
+
     /* =========================
         HAPUS PESERTA
     ========================== */
     public function destroy($id)
     {
-        $peserta = PesertaArisan::findOrFail($id);
+        $peserta = PesertaArisan::with('user')->findOrFail($id);
 
-        // hapus user terlebih dahulu
         if ($peserta->user) {
             $peserta->user->delete();
         }
@@ -154,13 +173,14 @@ class PesertaArisanController extends Controller
             ->route('admin.peserta.index')
             ->with('success', 'Peserta berhasil dihapus');
     }
+
+
     /* =========================
-        SHOW PESERTA
+        DETAIL PESERTA
     ========================== */
     public function show($id)
     {
         $peserta = PesertaArisan::with(['user', 'skemaArisan'])->findOrFail($id);
         return view('admin.peserta.show', compact('peserta'));
     }
-
 }

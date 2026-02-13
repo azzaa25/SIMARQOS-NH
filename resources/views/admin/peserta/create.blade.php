@@ -19,7 +19,6 @@
     </div>
 
     <div class="bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-50 overflow-hidden">
-        {{-- ID FORM DITAMBAHKAN UNTUK SCRIPT --}}
         <form id="createPesertaForm" action="{{ route('admin.peserta.store') }}" method="POST" class="p-8 md:p-10 space-y-6">
             @csrf
 
@@ -41,26 +40,30 @@
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Nama Lengkap Sesuai KTP</label>
                             <input type="text" name="nama" id="input_nama" value="{{ old('nama') }}" required placeholder="Masukkan nama lengkap..."
-                                   class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                   class="w-full px-5 py-3 bg-gray-50/50 border @error('nama') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                            @error('nama') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div class="space-y-1.5">
                                 <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Email Peserta</label>
                                 <input type="email" name="email" value="{{ old('email') }}" required placeholder="email@contoh.com"
-                                       class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                       class="w-full px-5 py-3 bg-gray-50/50 border @error('email') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                @error('email') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                             </div>
                             <div class="space-y-1.5">
                                 <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Password Default</label>
                                 <input type="password" name="password" required placeholder="Min. 8 Karakter"
-                                       class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                       class="w-full px-5 py-3 bg-gray-50/50 border @error('password') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                @error('password') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                             </div>
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Nomor WhatsApp Aktif</label>
                             <input type="text" name="no_hp" value="{{ old('no_hp') }}" required placeholder="Contoh: 081234567890"
-                                   class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                                   class="w-full px-5 py-3 bg-gray-50/50 border @error('no_hp') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
+                            @error('no_hp') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
@@ -81,31 +84,33 @@
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat Domisili</label>
                             <textarea name="alamat" rows="2" required placeholder="Masukkan alamat rumah lengkap..."
-                                      class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 resize-none placeholder:text-gray-300 leading-relaxed">{{ old('alamat') }}</textarea>
+                                      class="w-full px-5 py-3 bg-gray-50/50 border @error('alamat') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 resize-none placeholder:text-gray-300 leading-relaxed">{{ old('alamat') }}</textarea>
+                            @error('alamat') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Pilih Paket Arisan</label>
                             <select name="id_skema" required
-                                    class="w-full px-5 py-3 bg-gray-50/50 border border-gray-100 rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-bold text-green-800 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2rem_1.2rem] bg-[right_1.2rem_center] bg-no-repeat">
+                                    class="w-full px-5 py-3 bg-gray-50/50 border @error('id_skema') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-bold text-green-800 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2rem_1.2rem] bg-[right_1.2rem_center] bg-no-repeat">
                                 <option value="">-- Cari Skema Aktif --</option>
                                 @foreach($skemas as $skema)
                                     <option value="{{ $skema->id_skema }}" {{ old('id_skema') == $skema->id_skema ? 'selected' : '' }}>{{ $skema->nama_skema }}</option>
                                 @endforeach
                             </select>
+                            @error('id_skema') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
 
                         <div class="space-y-1.5">
-                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1 text-center">Status Aktivasi</label>
-                            <div class="grid grid-cols-2 gap-3 p-1.5 bg-gray-50/50 border border-gray-100 rounded-[20px]">
-                                <label class="relative flex items-center justify-center py-2.5 px-4 rounded-[14px] cursor-pointer group transition-all duration-300 has-[:checked]:bg-white has-[:checked]:shadow-md has-[:checked]:border-orange-100 border border-transparent">
-                                    <input type="radio" name="status" value="pending" checked class="sr-only">
-                                    <span class="text-[10px] font-black text-gray-400 group-hover:text-orange-500 group-[.has-[:checked]]:text-orange-600 tracking-widest uppercase transition-colors">Pending</span>
-                                </label>
-                                <label class="relative flex items-center justify-center py-2.5 px-4 rounded-[14px] cursor-pointer group transition-all duration-300 has-[:checked]:bg-white has-[:checked]:shadow-md has-[:checked]:border-green-100 border border-transparent">
-                                    <input type="radio" name="status" value="aktif" class="sr-only">
-                                    <span class="text-[10px] font-black text-gray-400 group-hover:text-green-600 group-[.has-[:checked]]:text-green-700 tracking-widest uppercase transition-colors">Aktif</span>
-                                </label>
+                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">Status Akun</label>
+                            <div class="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-[20px]">
+                                <div class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest leading-none">Otomatis Aktif</p>
+                                    <p class="text-[10px] text-blue-400 mt-1 italic leading-tight">Pendaftaran oleh Admin akan langsung mengaktifkan akun peserta.</p>
+                                </div>
+                                <input type="hidden" name="status" value="aktif">
                             </div>
                         </div>
                     </div>
@@ -116,7 +121,6 @@
                            class="flex-1 px-4 py-3.5 bg-white text-gray-400 text-[11px] font-black uppercase tracking-[0.2em] rounded-2xl text-center hover:bg-gray-50 border border-gray-100 transition-all active:scale-95 shadow-sm">
                             Batal
                         </a>
-                        {{-- TYPE DIGANTI KE BUTTON UNTUK TRIGGER KONFIRMASI --}}
                         <button type="button" onclick="confirmStore()"
                                 class="flex-[2.5] bg-[#147a54] hover:bg-green-800 text-white text-[11px] font-black uppercase tracking-[0.2em] py-3.5 rounded-2xl transition-all shadow-xl shadow-green-900/10 active:scale-[0.98] transform hover:-translate-y-0.5">
                             Daftarkan Peserta
@@ -128,12 +132,9 @@
     </div>
 </div>
 
-{{-- SCRIPT KONFIRMASI --}}
 <script>
     function confirmStore() {
         const nama = document.getElementById('input_nama').value;
-        
-        // Cek dasar validasi sisi klien (opsional, tapi bagus untuk UX)
         if (!nama) {
             Swal.fire({
                 icon: 'error',
@@ -164,25 +165,15 @@
             buttonsStyling: false
         }).then((result) => {
             if (result.isConfirmed) {
-                // Tampilkan loading saat proses simpan
                 Swal.fire({
                     title: 'Sedang Memproses...',
                     showConfirmButton: false,
                     allowOutsideClick: false,
                     didOpen: () => { Swal.showLoading(); }
                 });
-                // Submit form secara manual
                 document.getElementById('createPesertaForm').submit();
             }
         });
     }
 </script>
-
-<style>
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    .animate-fadeIn { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-</style>
 @endsection

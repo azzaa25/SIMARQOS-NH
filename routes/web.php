@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Admin\SkemaArisanController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PesertaArisanController;
+use App\Http\Controllers\Admin\UserApprovalController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,9 +37,15 @@ Route::middleware(['auth', 'role:admin'])
 
         Route::get('/dashboard', [DashboardController::class, 'index'])
             ->name('dashboard');
-
+        // SKEMA ARISAN ROUTES
         Route::resource('skema', SkemaArisanController::class);
+        // PESERTA ARISAN ROUTES
         Route::resource('peserta', PesertaArisanController::class);
+        // USER APPROVAL ROUTES
+        Route::get('/pending', [UserApprovalController::class, 'index'])->name('pending.index');
+        Route::post('/pending/{id}/approve', [UserApprovalController::class, 'approve'])->name('pending.approve');
+        Route::post('/pending/{id}/reject', [UserApprovalController::class, 'reject'])->name('pending.reject');
+
     });
 
 /*

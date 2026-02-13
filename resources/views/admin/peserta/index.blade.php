@@ -107,7 +107,7 @@
                         <p class="text-[9px] text-gray-400 uppercase tracking-widest font-bold">Paket Arisan</p>
                     </td>
                     <td class="px-6 py-5 text-center uppercase">
-                        @if(strtolower($p->status) == 'aktif')
+                        @if($p->user->status == 'aktif')
                             <span class="px-4 py-1.5 text-[9px] font-black rounded-full tracking-widest border-2 bg-blue-50 text-blue-600 border-blue-100">
                                 AKTIF
                             </span>

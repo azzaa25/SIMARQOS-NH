@@ -37,13 +37,37 @@
                 </div>
             </div>
 
-            <div class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md">
-                <div class="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
-                    AM
-                </div>
-                <div class="text-[10px] leading-tight">
-                    <p class="font-bold text-gray-800 tracking-tight">Admin Masjid</p>
-                    <p class="text-gray-500 lowercase font-semibold">Administrator</p>
+            <div class="flex items-center gap-3">
+                <a href="{{ route('admin.pending.index') }}" class="relative p-2 text-gray-400 bg-white rounded-full border border-gray-100 shadow-sm hover:text-green-700 hover:bg-green-50 transition-all group" title="Lihat Notifikasi Pendaftaran">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    
+                    {{-- Hitung jumlah peserta status pending dari database --}}
+                    @php 
+                        $pendingCount = \App\Models\User::where('status', 'pending')
+                                        ->where('role', 'peserta')
+                                        ->count(); 
+                    @endphp
+                    
+                    @if($pendingCount > 0)
+                    <span class="absolute top-0 right-0 flex h-5 w-5 transform translate-x-1 -translate-y-1">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-600 text-[10px] font-bold text-white border-2 border-white shadow-sm">
+                            {{ $pendingCount }}
+                        </span>
+                    </span>
+                    @endif
+                </a>
+
+                <div class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md">
+                    <div class="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
+                        {{ substr(Auth::user()->nama ?? 'AM', 0, 2) }}
+                    </div>
+                    <div class="text-[10px] leading-tight">
+                        <p class="font-bold text-gray-800 tracking-tight">{{ Auth::user()->nama ?? 'Admin Masjid' }}</p>
+                        <p class="text-gray-500 lowercase font-semibold">{{ Auth::user()->role ?? 'Administrator' }}</p>
+                    </div>
                 </div>
             </div>
         </header>
