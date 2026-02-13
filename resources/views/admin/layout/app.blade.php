@@ -30,24 +30,20 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
                     </svg>
                 </button>
-                <div class="hidden md:block">
-                    <span class="text-xs font-medium text-gray-400 italic tracking-wide">
-                        Sistem Manajemen Masjid Nurul Huda
-                    </span>
+                <div class="hidden md:block text-[10px] font-medium text-gray-400 italic tracking-wide">
+                    Sistem Manajemen Masjid Nurul Huda
                 </div>
             </div>
 
             <div class="flex items-center gap-3">
+                {{-- NOTIFIKASI PENDING --}}
                 <a href="{{ route('admin.pending.index') }}" class="relative p-2 text-gray-400 bg-white rounded-full border border-gray-100 shadow-sm hover:text-green-700 hover:bg-green-50 transition-all group" title="Lihat Notifikasi Pendaftaran">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                     </svg>
                     
-                    {{-- Hitung jumlah peserta status pending dari database --}}
                     @php 
-                        $pendingCount = \App\Models\User::where('status', 'pending')
-                                        ->where('role', 'peserta')
-                                        ->count(); 
+                        $pendingCount = \App\Models\User::where('status', 'pending')->where('role', 'peserta')->count(); 
                     @endphp
                     
                     @if($pendingCount > 0)
@@ -60,15 +56,29 @@
                     @endif
                 </a>
 
-                <div class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md">
-                    <div class="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner">
-                        {{ substr(Auth::user()->nama ?? 'AM', 0, 2) }}
+                {{-- PROFIL USER (INTERAKTIF & DINAMIS) --}}
+                <a href="{{ route('admin.profile.index') }}" class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-green-200 active:scale-95 group">
+                    
+                    {{-- Avatar: Inisial diambil dari database user --}}
+                    <div class="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner group-hover:bg-green-700 transition-colors uppercase">
+                        {{ substr(Auth::user()->nama ?? 'U', 0, 2) }}
                     </div>
+
+                    {{-- Data Nama & Role: Murni diambil dari database --}}
                     <div class="text-[10px] leading-tight">
-                        <p class="font-bold text-gray-800 tracking-tight">{{ Auth::user()->nama ?? 'Admin Masjid' }}</p>
-                        <p class="text-gray-500 lowercase font-semibold">{{ Auth::user()->role ?? 'Administrator' }}</p>
+                        <p class="font-bold text-gray-800 tracking-tight group-hover:text-green-700 transition-colors uppercase">
+                            {{ Auth::user()->nama }}
+                        </p>
+                        <p class="text-gray-500 lowercase font-semibold tracking-tighter">
+                            {{ Auth::user()->role }}
+                        </p>
                     </div>
-                </div>
+
+                    {{-- Indikator Klik --}}
+                    <svg class="w-3 h-3 text-gray-300 group-hover:text-green-500 transition-colors ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"></path>
+                    </svg>
+                </a>
             </div>
         </header>
 

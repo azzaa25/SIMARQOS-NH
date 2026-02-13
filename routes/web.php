@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\SkemaArisanController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PesertaArisanController;
 use App\Http\Controllers\Admin\UserApprovalController;
+use App\Http\Controllers\Admin\AdminManageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,12 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('/pending', [UserApprovalController::class, 'index'])->name('pending.index');
         Route::post('/pending/{id}/approve', [UserApprovalController::class, 'approve'])->name('pending.approve');
         Route::post('/pending/{id}/reject', [UserApprovalController::class, 'reject'])->name('pending.reject');
+        //profile & manage admin
+        Route::get('/profile', [AdminManageController::class, 'index'])->name('profile.index');
+        Route::get('/manage-admin', [AdminManageController::class, 'manage'])->name('manage.index');
+        Route::post('/manage-admin', [AdminManageController::class, 'store'])->name('manage.store');
+        Route::put('/manage-admin/{id}', [AdminManageController::class, 'update'])->name('manage.update');
+        Route::delete('/manage-admin/{id}', [AdminManageController::class, 'destroy'])->name('manage.destroy');
 
     });
 
