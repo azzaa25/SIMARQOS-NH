@@ -12,6 +12,7 @@ class PesertaArisan extends Model
     protected $fillable = [
         'id_user',
         'id_skema',
+        'id_kelompok',
         'nama',
         'alamat',
         'no_hp',
@@ -28,5 +29,10 @@ class PesertaArisan extends Model
     public function skemaArisan()
     {
         return $this->belongsTo(SkemaArisan::class, 'id_skema');
+    }
+
+    public function kelompok()
+    {
+        return $this->belongsTo(KelompokArisan::class, 'id_kelompok');
     }
 }

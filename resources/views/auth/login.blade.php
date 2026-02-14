@@ -98,7 +98,7 @@
             Selamat Datang 
         </h1>
         <p class="text-gray-500 text-sm mt-2 font-medium italic leading-relaxed uppercase tracking-widest">
-            Sistem Manajemen Arisan Qurban
+            Sistem Manajemen Arisan Qurban & Kegiatan Sosial
         </p>
     </div>
 

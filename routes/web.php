@@ -7,6 +7,9 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PesertaArisanController;
 use App\Http\Controllers\Admin\UserApprovalController;
 use App\Http\Controllers\Admin\AdminManageController;
+use App\Http\Controllers\Admin\UndianArisanController;
+use App\Http\Controllers\Peserta\DashboardPesertaController;
+use App\Http\Controllers\Peserta\KelompokController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +55,9 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/manage-admin', [AdminManageController::class, 'store'])->name('manage.store');
         Route::put('/manage-admin/{id}', [AdminManageController::class, 'update'])->name('manage.update');
         Route::delete('/manage-admin/{id}', [AdminManageController::class, 'destroy'])->name('manage.destroy');
+        // UNDIAN ARISAN ROUTES
+        Route::get('/undian', [UndianArisanController::class, 'index'])->name('undian.index');
+        Route::post('/undian/proses', [UndianArisanController::class, 'prosesUndian'])->name('undian.proses');
 
     });
 
@@ -65,6 +71,11 @@ Route::middleware(['auth', 'role:peserta'])
     ->as('peserta.')
     ->group(function () {
 
-        Route::get('/dashboard', fn () => 'Dashboard Peserta')
+        Route::get('/dashboard', [DashboardPesertaController::class, 'index'])
             ->name('dashboard');
+        // Kelompok Arisan Routes
+        Route::get('/kelompok', [KelompokController::class, 'index'])->name('kelompok.index');
+        Route::post('/kelompok', [KelompokController::class, 'storeAnggota'])->name('kelompok.store');
+        Route::put('/kelompok/anggota/{id}', [KelompokController::class, 'updateAnggota'])->name('kelompok.update');
+        Route::delete('/kelompok/anggota/{id}', [KelompokController::class, 'destroyAnggota'])->name('kelompok.destroy');
     });

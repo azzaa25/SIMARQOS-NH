@@ -93,7 +93,7 @@
             </svg>
         </div>
         <h1 class="text-xl font-extrabold text-gray-900 tracking-tight">Daftar Akun Peserta</h1>
-        <p class="text-gray-400 text-[11px] font-medium uppercase tracking-widest">Sistem Manajemen Arisan Qurban</p>
+        <p class="text-gray-400 text-[11px] font-medium uppercase tracking-widest">Sistem Manajemen Arisan Qurban & Kegiatan Sosial</p>
     </div>
 
     @if ($errors->any())
