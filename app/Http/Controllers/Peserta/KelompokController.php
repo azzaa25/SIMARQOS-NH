@@ -20,30 +20,34 @@ class KelompokController extends Controller
     */
     public function index()
     {
-        $peserta = auth()->user()->peserta;
+        $user = auth()->user();
+        $peserta = $user->peserta;
 
         if (!$peserta) {
-            return redirect()->route('peserta.dashboard')
-                ->with('error', 'Data peserta tidak ditemukan.');
+            return redirect()->route('peserta.dashboard')->with('error', 'Data peserta tidak ditemukan.');
         }
 
         $skema = $peserta->skemaArisan;
 
-        // Proteksi hanya untuk skema kelompok
         if (!$skema || $skema->tipe_skema !== 'kelompok') {
-            return redirect()->route('peserta.dashboard')
-                ->with('error', 'Skema Anda bukan kelompok.');
+            return redirect()->route('peserta.dashboard')->with('error', 'Skema Anda bukan kelompok.');
         }
 
-        // Jika belum punya kelompok
-        if (!$peserta->id_kelompok) {
-            $kelompok = null;
-            $anggota = collect([$peserta]);
-        } else {
-            $kelompok = $peserta->kelompok;
+        $kelompok = $peserta->kelompok;
+        
+        // Jika sudah punya kelompok, ambil semua anggota
+        if ($kelompok) {
             $anggota = PesertaArisan::where('id_kelompok', $peserta->id_kelompok)
                 ->orderBy('created_at', 'asc')
                 ->get();
+                
+            // CEK APAKAH USER INI ADALAH KETUA
+            // Kita cek apakah id_pesertaarisan user ini sama dengan id_ketua_peserta di tabel kelompok
+            $isKetua = ($peserta->id_pesertaarisan == $kelompok->id_ketua_peserta);
+        } else {
+            $kelompok = null;
+            $anggota = collect([$peserta]);
+            $isKetua = true; // Jika belum ada kelompok, dia dianggap calon ketua
         }
 
         $maxKuota = 7;
@@ -54,7 +58,8 @@ class KelompokController extends Controller
             'anggota',
             'sisaKuota',
             'skema',
-            'peserta'
+            'peserta',
+            'isKetua' // Kirim variabel ini ke view
         ));
     }
 

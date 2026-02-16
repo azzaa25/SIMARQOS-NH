@@ -17,28 +17,40 @@ class PesertaArisanController extends Controller
     ========================== */
     public function index(Request $request)
     {
-        $query = PesertaArisan::with(['user', 'skemaArisan'])
+        $query = PesertaArisan::with(['user', 'skemaArisan', 'kelompok.ketua'])
             ->whereHas('user', function ($q) {
                 $q->whereIn('status', ['aktif', 'nonaktif']);
             });
 
+        /* =========================
+            LOGIKA PENCARIAN
+        ========================== */
         $search = $request->input('search');
-        $skema  = $request->input('skema');
-
         if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('nama', 'like', "%{$search}%")
-                  ->orWhere('alamat', 'like', "%{$search}%")
-                  ->orWhere('no_hp', 'like', "%{$search}%");
+                ->orWhere('alamat', 'like', "%{$search}%")
+                ->orWhere('no_hp', 'like', "%{$search}%");
             });
         }
 
-        if ($skema) {
-            $query->where('id_skema', $skema);
+        /* =========================
+            LOGIKA FILTER SKEMA
+        ========================== */
+        $skemaId = $request->input('skema');
+        if ($skemaId) {
+            $query->where('id_skema', $skemaId);
         }
 
-        $pesertas = $query->orderBy('id_pesertaarisan', 'desc')->paginate(10);
-        $skemas   = SkemaArisan::orderBy('nama_skema')->get();
+        /* =========================
+            LOGIKA PENGURUTAN (GROUPING)
+        ========================== */
+        $pesertas = $query->orderByRaw('id_kelompok IS NULL, id_kelompok ASC')
+                        ->orderBy('id_pesertaarisan', 'desc')
+                        ->paginate(15); // Menggunakan paginasi untuk performa
+
+        // Mengambil semua skema untuk dropdown filter di view
+        $skemas = SkemaArisan::orderBy('nama_skema', 'asc')->get();
 
         return view('admin.peserta.index', compact('pesertas', 'skemas'));
     }
