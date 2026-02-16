@@ -6,21 +6,29 @@ use App\Http\Controllers\Controller;
 use App\Models\UndianArisan;
 use App\Models\SkemaArisan;
 use App\Models\PesertaArisan;
+use App\Models\KelompokArisan;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class UndianArisanController extends Controller
 {
+    /* =========================
+        HALAMAN INDEX UNDIAN
+    ========================== */
     public function index()
     {
         $skemas = SkemaArisan::all();
-        $undians = UndianArisan::with(['peserta', 'skema'])->latest()->paginate(10);
         
-        // Hitung Statistik: Menggunakan join karena 'status' ada di tabel users
-        $totalPeserta = PesertaArisan::join('users', 'peserta_arisan.id_user', '=', 'users.id_user')
-                        ->where('users.status', 'aktif')
-                        ->count();
+        // Load undian dengan relasi peserta, skema, dan kelompok agar bisa dikelompokkan di view
+        $undians = UndianArisan::with(['peserta.kelompok', 'skema'])
+                    ->latest()
+                    ->paginate(20);
+        
+        // Statistik Peserta Aktif
+        $totalPeserta = PesertaArisan::whereHas('user', function($q) {
+                            $q->where('status', 'aktif');
+                        })->count();
                         
         $selesai = UndianArisan::count();
         $menunggu = max(0, $totalPeserta - $selesai);
@@ -28,42 +36,72 @@ class UndianArisanController extends Controller
         return view('admin.undian.index', compact('skemas', 'undians', 'totalPeserta', 'menunggu', 'selesai'));
     }
 
+    /* =========================
+        PROSES UNDIAN LOGIC
+    ========================== */
     public function prosesUndian(Request $request)
     {
-        $request->validate(['id_skema' => 'required']);
+        $request->validate([
+            'id_skema' => 'required|exists:skema_arisan,id_skema'
+        ]);
+
         $skema = SkemaArisan::findOrFail($request->id_skema);
-
-        // Ambil peserta yang BELUM PERNAH menang di skema ini dan akunnya AKTIF
-        // Menggunakan join untuk mengakses kolom status di tabel users
-        
-        $pesertaReady = PesertaArisan::join('users', 'peserta_arisan.id_user', '=', 'users.id_user')
-            ->where('peserta_arisan.id_skema', $skema->id_skema)
-            ->where('users.status', 'aktif') // Status diambil dari tabel users
-            ->whereNotIn('peserta_arisan.id_pesertaarisan', function($q) use ($skema) {
-                $q->select('id_pesertaarisan')
-                  ->from('undian_arisan')
-                  ->where('id_skema', $skema->id_skema);
-            })
-            ->select('peserta_arisan.*') // Pastikan hanya mengambil kolom milik peserta_arisan
-            ->inRandomOrder()
-            ->get();
-
-        if ($pesertaReady->isEmpty()) {
-            return back()->with('error', 'Semua peserta pada skema ini sudah menang atau tidak ada akun aktif.');
-        }
-
-        // Tentukan Kuota: 1 thn = Semua, 3 thn = 10 orang
-        $kuota = ($skema->durasi_tahun == 1) ? $pesertaReady->count() : 10;
-        $pemenang = $pesertaReady->take($kuota);
-
-        // Hitung periode Tahun Ke- berapa sekarang
-        $tahunKe = UndianArisan::where('id_skema', $skema->id_skema)
-                    ->distinct('tahun_ke')
-                    ->count() + 1;
 
         DB::beginTransaction();
         try {
-            foreach ($pemenang as $index => $p) {
+            // Tentukan periode Tahun Ke- berapa sekarang
+            $tahunKe = UndianArisan::where('id_skema', $skema->id_skema)
+                        ->max('tahun_ke') ?? 0;
+            $tahunKe++;
+
+            $pemenangList = collect();
+
+            if ($skema->tipe_skema === 'kelompok') {
+                /* --- LOGIKA UNDIAN KELOMPOK --- */
+                // Ambil 1 kelompok yang SUDAH LENGKAP anggotanya dan BELUM PERNAH MENANG
+                $kelompokTerpilih = KelompokArisan::where('status_kelompok', 'lengkap')
+                    ->whereHas('peserta', function($q) use ($skema) {
+                        $q->where('id_skema', $skema->id_skema);
+                    })
+                    ->whereNotIn('id_kelompok', function($q) {
+                        $q->select('peserta_arisan.id_kelompok')
+                          ->from('undian_arisan')
+                          ->join('peserta_arisan', 'undian_arisan.id_pesertaarisan', '=', 'peserta_arisan.id_pesertaarisan')
+                          ->whereNotNull('peserta_arisan.id_kelompok');
+                    })
+                    ->inRandomOrder()
+                    ->first();
+
+                if (!$kelompokTerpilih) {
+                    return back()->with('error', 'Tidak ada kelompok lengkap yang tersedia untuk diundi pada skema ini.');
+                }
+
+                // Semua anggota di dalam kelompok tersebut menjadi pemenang
+                $pemenangList = PesertaArisan::where('id_kelompok', $kelompokTerpilih->id_kelompok)->get();
+                $pesanSukses = "Kelompok " . $kelompokTerpilih->kode_kelompok . " terpilih sebagai pemenang Tahun Ke-" . $tahunKe;
+
+            } else {
+                /* --- LOGIKA UNDIAN INDIVIDU --- */
+                $pesertaReady = PesertaArisan::where('id_skema', $skema->id_skema)
+                    ->whereHas('user', function($q) { $q->where('status', 'aktif'); })
+                    ->whereNotIn('id_pesertaarisan', function($q) use ($skema) {
+                        $q->select('id_pesertaarisan')->from('undian_arisan')->where('id_skema', $skema->id_skema);
+                    })
+                    ->inRandomOrder()
+                    ->get();
+
+                if ($pesertaReady->isEmpty()) {
+                    return back()->with('error', 'Semua peserta individu sudah menang.');
+                }
+
+                // Kuota default individu: Jika 1 thn ambil semua, jika 3 thn ambil 10
+                $kuota = ($skema->durasi_tahun == 1) ? $pesertaReady->count() : 10;
+                $pemenangList = $pesertaReady->take($kuota);
+                $pesanSukses = count($pemenangList) . " Peserta terpilih sebagai pemenang Tahun Ke-" . $tahunKe;
+            }
+
+            // Simpan ke Tabel Undian
+            foreach ($pemenangList as $index => $p) {
                 UndianArisan::create([
                     'id_skema' => $skema->id_skema,
                     'id_pesertaarisan' => $p->id_pesertaarisan,
@@ -73,11 +111,13 @@ class UndianArisanController extends Controller
                     'status_undian' => 'pemenang'
                 ]);
             }
+
             DB::commit();
-            return back()->with('success', count($pemenang) . ' Peserta terpilih untuk Qurban Tahun Ke-' . $tahunKe);
+            return back()->with('success', $pesanSukses);
+
         } catch (\Exception $e) {
             DB::rollback();
-            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses undian: ' . $e->getMessage());
         }
     }
 }
