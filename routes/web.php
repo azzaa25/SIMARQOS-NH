@@ -1,15 +1,19 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+// Auth Controllers
 use App\Http\Controllers\Auth\AuthController;
+// Admin Controllers
 use App\Http\Controllers\Admin\SkemaArisanController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\PesertaArisanController;
 use App\Http\Controllers\Admin\UserApprovalController;
 use App\Http\Controllers\Admin\AdminManageController;
 use App\Http\Controllers\Admin\UndianArisanController;
+// Peserta Controllers
 use App\Http\Controllers\Peserta\DashboardPesertaController;
 use App\Http\Controllers\Peserta\KelompokController;
+use App\Http\Controllers\Peserta\UndianController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,9 +77,16 @@ Route::middleware(['auth', 'role:peserta'])
 
         Route::get('/dashboard', [DashboardPesertaController::class, 'index'])
             ->name('dashboard');
+        // Notifikasi 
+        Route::get('/read-undian-notif', function() {
+            session(['undian_notif_read' => true]);
+            return redirect()->route('peserta.undian.index');
+        })->name('mark-undian-read');
         // Kelompok Arisan Routes
         Route::get('/kelompok', [KelompokController::class, 'index'])->name('kelompok.index');
         Route::post('/kelompok', [KelompokController::class, 'storeAnggota'])->name('kelompok.store');
         Route::put('/kelompok/anggota/{id}', [KelompokController::class, 'updateAnggota'])->name('kelompok.update');
         Route::delete('/kelompok/anggota/{id}', [KelompokController::class, 'destroyAnggota'])->name('kelompok.destroy');
+        // Hasil Undian Routes
+        Route::get('/undian', [UndianController::class, 'index'])->name('undian.index');
     });

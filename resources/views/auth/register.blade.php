@@ -19,21 +19,14 @@
         /* --- Animasi Latar Belakang --- */
         .bg-animated {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            background: #f8fafc;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1; background: #f8fafc; overflow: hidden;
         }
 
         .blob {
-            position: absolute;
-            width: 600px;
-            height: 600px;
+            position: absolute; width: 600px; height: 600px;
             background: radial-gradient(circle, rgba(20, 122, 84, 0.4) 0%, rgba(255, 255, 255, 0) 70%);
-            border-radius: 50%;
-            filter: blur(50px);
+            border-radius: 50%; filter: blur(50px);
             animation: move 20s infinite alternate ease-in-out;
         }
         .blob-1 { top: -200px; left: -100px; }
@@ -44,7 +37,6 @@
             100% { transform: translate(100px, 50px) scale(1.1); }
         }
 
-        /* --- Style Card Glassmorphism --- */
         .glass-card {
             background: rgba(255, 255, 255, 0.85);
             backdrop-filter: blur(20px);
@@ -117,13 +109,29 @@
                     <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required
                         class="w-full px-4 py-2 bg-white border @error('email') border-red-300 @else border-gray-200 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-xs font-semibold text-gray-700">
                 </div>
-                <div>
-                    <input type="password" name="password" placeholder="Password" required
-                        class="w-full px-4 py-2 bg-white border @error('password') border-red-300 @else border-gray-200 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-xs font-semibold text-gray-700">
+                
+                {{-- Password Input --}}
+                <div class="relative">
+                    <input type="password" name="password" id="password" placeholder="Password" required
+                        class="w-full px-4 py-2 bg-white border @error('password') border-red-300 @else border-gray-200 @enderror rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-xs font-semibold text-gray-700 pr-10">
+                    <button type="button" onclick="togglePass('password', 'eye1')" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-green-600 transition-colors">
+                        <svg id="eye1" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
                 </div>
-                <div>
-                    <input type="password" name="password_confirmation" placeholder="Konfirmasi Password" required
-                        class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-xs font-semibold text-gray-700">
+
+                {{-- Konfirmasi Password Input --}}
+                <div class="relative">
+                    <input type="password" name="password_confirmation" id="password_confirmation" placeholder="Konfirmasi Password" required
+                        class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-4 focus:ring-green-500/10 focus:border-green-600 outline-none text-xs font-semibold text-gray-700 pr-10">
+                    <button type="button" onclick="togglePass('password_confirmation', 'eye2')" class="absolute inset-y-0 right-0 px-3 flex items-center text-gray-400 hover:text-green-600 transition-colors">
+                        <svg id="eye2" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
@@ -166,6 +174,21 @@
         </div>
     </form>
 </div>
+
+<script>
+    function togglePass(inputId, eyeId) {
+        const input = document.getElementById(inputId);
+        const eye = document.getElementById(eyeId);
+        
+        if (input.type === 'password') {
+            input.type = 'text';
+            eye.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />`;
+        } else {
+            input.type = 'password';
+            eye.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />`;
+        }
+    }
+</script>
 
 </body>
 </html>
