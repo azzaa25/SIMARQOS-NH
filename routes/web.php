@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UndianArisanController;
 use App\Http\Controllers\Peserta\DashboardPesertaController;
 use App\Http\Controllers\Peserta\KelompokController;
 use App\Http\Controllers\Peserta\UndianController;
+use App\Http\Controllers\Peserta\ProfilePesertaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -82,6 +83,9 @@ Route::middleware(['auth', 'role:peserta'])
             session(['undian_notif_read' => true]);
             return redirect()->route('peserta.undian.index');
         })->name('mark-undian-read');
+        // Profile Routes
+        Route::get('/profile', [ProfilePesertaController::class, 'index'])->name('profile.index');
+        Route::put('/profile/update', [ProfilePesertaController::class, 'update'])->name('profile.update');
         // Kelompok Arisan Routes
         Route::get('/kelompok', [KelompokController::class, 'index'])->name('kelompok.index');
         Route::post('/kelompok', [KelompokController::class, 'storeAnggota'])->name('kelompok.store');

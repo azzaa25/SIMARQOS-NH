@@ -127,7 +127,7 @@
                 </div>
 
                 {{-- PROFIL USER --}}
-                <a href="#" class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-green-200 active:scale-95 group">
+                <a href="{{ route('peserta.profile.index') }}" class="flex items-center gap-3 bg-white p-1 pr-4 rounded-full shadow-sm border border-gray-100 transition-all hover:shadow-md hover:border-green-200 active:scale-95 group">
                     <div class="w-8 h-8 bg-green-800 text-white rounded-full flex items-center justify-center text-xs font-bold shadow-inner group-hover:rotate-12 transition-all uppercase">
                         {{ substr(Auth::user()->nama ?? 'U', 0, 2) }}
                     </div>
