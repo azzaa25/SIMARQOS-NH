@@ -10,11 +10,13 @@ use App\Http\Controllers\Admin\PesertaArisanController;
 use App\Http\Controllers\Admin\UserApprovalController;
 use App\Http\Controllers\Admin\AdminManageController;
 use App\Http\Controllers\Admin\UndianArisanController;
+use App\Http\Controllers\Admin\TransaksiAdminController;
 // Peserta Controllers
 use App\Http\Controllers\Peserta\DashboardPesertaController;
 use App\Http\Controllers\Peserta\KelompokController;
 use App\Http\Controllers\Peserta\UndianController;
 use App\Http\Controllers\Peserta\ProfilePesertaController;
+use App\Http\Controllers\Peserta\TransaksiPesertaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -63,6 +65,11 @@ Route::middleware(['auth', 'role:admin'])
         // UNDIAN ARISAN ROUTES
         Route::get('/undian', [UndianArisanController::class, 'index'])->name('undian.index');
         Route::post('/undian/proses', [UndianArisanController::class, 'prosesUndian'])->name('undian.proses');
+        // TRANSAKSI PEMBAYARAN ROUTES
+        Route::get('/transaksi', [TransaksiAdminController::class, 'index'])->name('transaksi.index');
+        Route::post('/transaksi/verifikasi/{id}', [TransaksiAdminController::class, 'verifikasiManual'])->name('transaksi.verifikasi');
+        Route::post('/transaksi/generate', [TransaksiAdminController::class, 'generateTagihan'])->name('transaksi.generate');
+        Route::get('/transaksi/export', [TransaksiAdminController::class, 'exportPDF'])->name('transaksi.export');
 
     });
 
@@ -93,4 +100,7 @@ Route::middleware(['auth', 'role:peserta'])
         Route::delete('/kelompok/anggota/{id}', [KelompokController::class, 'destroyAnggota'])->name('kelompok.destroy');
         // Hasil Undian Routes
         Route::get('/undian', [UndianController::class, 'index'])->name('undian.index');
+        // Transaksi Pembayaran Routes
+        Route::get('/transaksi', [TransaksiPesertaController::class, 'index'])->name('transaksi.index');
+        Route::get('/transaksi/get-token/{id}', [TransaksiPesertaController::class, 'getToken'])->name('transaksi.getToken');
     });

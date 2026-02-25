@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // [TAMBAHKAN KODE DI BAWAH INI]
+        // Memaksa semua URL menggunakan HTTPS saat di lingkungan lokal/ngrok
+        if (config('app.env') === 'local') {
+            URL::forceScheme('https');
+        }
     }
 }
