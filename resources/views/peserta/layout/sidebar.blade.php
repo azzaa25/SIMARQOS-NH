@@ -37,7 +37,7 @@
             @endif
 
             {{-- Jadwal & Iuran --}}
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+            <a href="{{ route('peserta.jadwal.index') }}" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('peserta.jadwal.*') ? 'bg-green-500/10 text-green-400 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 <span class="text-sm">Jadwal & Tagihan</span>
             </a>
@@ -59,7 +59,7 @@
             </a>
 
             {{-- Riwayat & Laporan --}}
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+            <a href="{{ route('peserta.laporan.index') }}" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all {{ request()->routeIs('peserta.laporan.*') ? 'bg-green-500/10 text-green-400 font-bold' : 'text-gray-400 hover:bg-white/5 hover:text-white' }}">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 <span class="text-sm">Laporan Keuangan Diri</span>
             </a>

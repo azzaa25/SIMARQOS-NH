@@ -20,6 +20,12 @@ class TransaksiAdminController extends Controller
     {
         $transaksi = TransaksiPembayaran::with('peserta')->latest()->get();
 
+        // --- FITUR TUNGGAKAN ---
+        $tunggakan = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
+        ->where('status_pembayaran', 'pending')
+        ->orderBy('created_at', 'asc')
+        ->get();
+
         // Hitung total peserta yang aktif & nonaktif saja
         $totalPeserta = PesertaArisan::whereHas('user', function ($q) {
             $q->whereIn('status', ['aktif', 'nonaktif']);
@@ -45,7 +51,7 @@ class TransaksiAdminController extends Controller
             ->pluck('total');
 
         return view('admin.transaksi.index', compact(
-            'transaksi', 'totalPeserta', 'totalSkema', 'totalKas', 
+            'transaksi', 'tunggakan', 'totalPeserta', 'totalSkema', 'totalKas', 
             'rataRata', 'tertinggi', 'metodeFavorit', 'grafikBulanan'
         ));
     }
@@ -136,7 +142,7 @@ class TransaksiAdminController extends Controller
         $trx = TransaksiPembayaran::findOrFail($id);
         $trx->update([
             'status_pembayaran' => 'sukses',
-            'metode_pembayaran' => 'Manual/Tunai'
+            'metode_pembayaran' => 'Tunai'
         ]);
 
         return back()->with('success', 'Pembayaran berhasil diverifikasi secara manual.');

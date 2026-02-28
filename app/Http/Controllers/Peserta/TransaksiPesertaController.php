@@ -50,6 +50,17 @@ class TransaksiPesertaController extends Controller
                 'order_id' => $trx->order_id,
                 'gross_amount' => (int)$trx->nominal,
             ],
+            // TAMBAHAN: Membatasi hanya Virtual Account (VA) Bank saja
+            'enabled_payments' => [
+                'bca_va', 
+                'bni_va', 
+                'bri_va', 
+                'bsi_va',
+                'permata_va',
+                'danamon_va',
+                'cimb_va',
+                'alfamart'
+            ],
             'customer_details' => [
                 'first_name' => auth()->user()->name,
                 'email' => auth()->user()->email,

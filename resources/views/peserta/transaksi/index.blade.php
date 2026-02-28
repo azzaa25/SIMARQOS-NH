@@ -26,7 +26,7 @@
                     <span class="px-6 py-2 bg-green-100 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest">Lunas</span>
                 @else
                     <button id="pay-button-{{ $tagihan->id_transaksi }}" onclick="payNow({{ $tagihan->id_transaksi }})" 
-                        class="bg-green-800 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-900/20">
+                        class="bg-green-800 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-900/20 disabled:bg-gray-400 disabled:cursor-not-allowed">
                         Bayar Sekarang
                     </button>
                 @endif
@@ -42,20 +42,50 @@
 
 {{-- Midtrans Snap JS --}}
 <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="{{ config('services.midtrans.clientKey') }}"></script>
+
 <script>
     function payNow(id) {
+        const btn = document.getElementById(`pay-button-${id}`);
+        const originalText = btn.innerHTML;
+
+        // 1. Tambahkan Efek Loading
+        btn.disabled = true;
+        btn.innerHTML = "MEMPROSES...";
+
         // Ambil Snap Token dari server
         fetch(`/peserta/transaksi/get-token/${id}`)
             .then(response => response.json())
             .then(data => {
                 if (data.snap_token) {
                     window.snap.pay(data.snap_token, {
-                        onSuccess: function(result) { location.reload(); },
-                        onPending: function(result) { alert("Menunggu pembayaran Anda..."); },
-                        onError: function(result) { alert("Pembayaran gagal!"); },
-                        onClose: function() { alert('Anda menutup jendela tanpa menyelesaikan pembayaran.'); }
+                        onSuccess: function(result) { 
+                            location.reload(); 
+                        },
+                        onPending: function(result) { 
+                            location.reload(); 
+                        },
+                        onError: function(result) { 
+                            alert("Pembayaran gagal!"); 
+                            // 2. Kembalikan tombol jika error
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        },
+                        onClose: function() { 
+                            // 3. Kembalikan tombol jika pop-up ditutup
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
                     });
+                } else {
+                    alert("Gagal mengambil token.");
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
                 }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
             });
     }
 </script>

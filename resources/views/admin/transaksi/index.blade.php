@@ -37,21 +37,98 @@
             {{-- Statistik Cards --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Peserta Aktif</p>
-                    <h3 class="text-xl font-black text-slate-800">{{ $totalPeserta }}</h3>
+                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Total Saldo</p>
+                    <h3 class="text-lg font-black text-slate-800 leading-tight">Rp {{ number_format($totalKas, 0, ',', '.') }}</h3>
                 </div>
+
+                {{-- Perbaikan Filter Saldo Tunai --}}
                 <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-                    <p class="text-[9px] font-black text-orange-400 uppercase mb-1">Tagihan Pending</p>
-                    <h3 class="text-xl font-black text-slate-800">{{ $transaksi->where('status_pembayaran', 'pending')->count() }}</h3>
+                    <p class="text-[9px] font-black text-blue-500 uppercase mb-1">Saldo Tunai</p>
+                    <h3 class="text-lg font-black text-slate-800 leading-tight">
+                        @php
+                            $saldoTunai = $transaksi->where('status_pembayaran', 'sukses')->filter(function($item) {
+                                return stripos($item->metode_pembayaran, 'tunai') !== false;
+                            })->sum('nominal');
+                        @endphp
+                        Rp {{ number_format($saldoTunai, 0, ',', '.') }}
+                    </h3>
                 </div>
-                <div class="bg-white p-5 rounded-[32px] border border-green-100 bg-green-50/30 shadow-sm md:col-span-2">
-                    <p class="text-[9px] font-black text-green-700 uppercase mb-1">Total Saldo Terkumpul</p>
-                    <h3 class="text-xl font-black text-green-800">Rp {{ number_format($totalKas, 0, ',', '.') }}</h3>
+
+                {{-- Perbaikan Filter Saldo Transfer --}}
+                <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
+                    <p class="text-[9px] font-black text-purple-500 uppercase mb-1">Saldo Transfer</p>
+                    <h3 class="text-lg font-black text-slate-800 leading-tight">
+                        @php
+                            $saldoTransfer = $transaksi->where('status_pembayaran', 'sukses')->filter(function($item) {
+                                return stripos($item->metode_pembayaran, 'tunai') === false;
+                            })->sum('nominal');
+                        @endphp
+                        Rp {{ number_format($saldoTransfer, 0, ',', '.') }}
+                    </h3>
+                </div>
+
+                <div class="bg-white p-5 rounded-[32px] border border-orange-100 bg-orange-50/30 shadow-sm">
+                    <p class="text-[9px] font-black text-orange-400 uppercase mb-1">Tagihan Pending</p>
+                    <h3 class="text-lg font-black text-slate-800 leading-tight">{{ $transaksi->where('status_pembayaran', 'pending')->count() }} Peserta</h3>
                 </div>
             </div>
 
-            {{-- DAFTAR TRANSAKSI (CONTAINER SCROLLABLE) --}}
+            {{-- DAFTAR TRANSAKSI --}}
             <div id="transactionList" class="space-y-6 max-h-[700px] overflow-y-auto pr-2 custom-scrollbar">
+                {{-- ================= FITUR BARU: DAFTAR TUNGGAKAN (PENDING) ================= --}}
+                @if($tunggakan->count() > 0)
+                <div class="transaction-item bg-orange-50 rounded-[32px] border border-orange-200 shadow-sm overflow-hidden mb-8 animate-pulse-slow">
+                    <div class="bg-orange-100/50 px-6 py-4 flex justify-between items-center border-b border-orange-200">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-orange-500 text-white rounded-2xl flex items-center justify-center shadow-lg shadow-orange-200">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </div>
+                            <div>
+                                <h2 class="text-xs font-black text-orange-900 uppercase tracking-widest">Daftar Tunggakan Belum Bayar</h2>
+                                <p class="text-[10px] text-orange-700 font-bold uppercase italic tracking-tighter">Total {{ $tunggakan->count() }} transaksi perlu ditagih</p>
+                            </div>
+                        </div>
+                        <span class="bg-white px-4 py-1.5 rounded-full text-[9px] font-black text-orange-600 border border-orange-200 uppercase">Perhatian Admin</span>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left searchable-table">
+                            <tbody class="divide-y divide-orange-100">
+                                @foreach($tunggakan as $tgk)
+                                <tr class="hover:bg-orange-100/30 transition-colors">
+                                    <td class="px-6 py-4 text-[9px] font-bold text-orange-400 uppercase w-24">#{{ $tgk->order_id }}</td>
+                                    <td class="px-6 py-4 name-cell">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-8 h-8 bg-orange-200 text-orange-600 rounded-full flex items-center justify-center text-[10px] font-black uppercase">{{ substr($tgk->peserta->nama, 0, 2) }}</div>
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-700 leading-tight">{{ $tgk->peserta->nama }}</p>
+                                                <p class="text-[9px] font-black text-orange-600 uppercase tracking-tighter">
+                                                    {{ $tgk->bulan_iuran }} • {{ $tgk->peserta->kelompok->nama_kelompok ?? 'Individu' }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-xs font-black text-slate-800">Rp {{ number_format($tgk->nominal, 0, ',', '.') }}</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <button type="button" onclick="confirmVerifikasi('{{ $tgk->id_transaksi }}', '{{ $tgk->peserta->nama }}')" 
+                                            class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl font-black text-[9px] uppercase tracking-widest transition-all shadow-md shadow-orange-200">
+                                            Verifikasi Manual
+                                        </button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                {{-- Garis Pemisah Visual --}}
+                <div class="relative py-4 flex items-center justify-center">
+                    <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-100"></div></div>
+                    <span class="relative bg-gray-50 px-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.3em]">Riwayat Semua Transaksi</span>
+                </div>
+                @endif
+
+                {{-- ================= DAFTAR TRANSAKSI NORMAL (SEMUA STATUS) ================= --}}
                 
                 @php 
                     $transaksiKelompok = $transaksi->whereNotNull('peserta.id_kelompok')->groupBy('peserta.id_kelompok'); 
@@ -66,7 +143,7 @@
                             </div>
                             <div>
                                 <h2 class="text-xs font-black text-green-900 uppercase tracking-widest">
-                                    {{ $items->first()->peserta->kelompokArisan->nama_kelompok ?? "Kelompok #$idKelompok" }}
+                                    {{ $items->first()->peserta->kelompok->nama_kelompok ?? "Kelompok #$idKelompok" }}
                                 </h2>
                                 <p class="text-[10px] text-green-700 font-bold uppercase italic">Iuran Terbagi 7 Orang</p>
                             </div>
@@ -90,6 +167,9 @@
                                     </div>
                                 </td>
                                 <td class="text-xs font-black text-green-700">Rp {{ number_format($t->nominal, 0, ',', '.') }}</td>
+                                <td class="text-[9px] font-black uppercase text-gray-400">
+                                    {{ $t->status_pembayaran == 'sukses' ? ($t->metode_pembayaran ?? 'Online') : '-' }}
+                                </td>
                                 <td class="text-center">
                                     @if($t->status_pembayaran == 'pending')
                                         <button type="button" onclick="confirmVerifikasi('{{ $t->id_transaksi }}', '{{ $t->peserta->nama }}')" class="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm">
@@ -133,6 +213,9 @@
                                     </div>
                                 </td>
                                 <td class="text-xs font-black text-green-700">Rp {{ number_format($t->nominal, 0, ',', '.') }}</td>
+                                <td class="text-[9px] font-black uppercase text-gray-400">
+                                    {{ $t->status_pembayaran == 'sukses' ? ($t->metode_pembayaran ?? 'Online') : '-' }}
+                                </td>
                                 <td class="text-center">
                                     @if($t->status_pembayaran == 'pending')
                                         <button type="button" onclick="confirmVerifikasi('{{ $t->id_transaksi }}', '{{ $t->peserta->nama }}')" class="p-2 bg-green-50 text-green-600 rounded-lg hover:bg-green-600 hover:text-white transition-all shadow-sm">
@@ -150,7 +233,7 @@
                                 </td>
                             </tr>
                             @empty
-                            <tr><td colspan="5" class="px-6 py-8 text-center text-gray-300 text-[10px] font-black uppercase">Belum ada data</td></tr>
+                            <tr><td colspan="6" class="px-6 py-8 text-center text-gray-300 text-[10px] font-black uppercase">Belum ada data</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -160,7 +243,6 @@
 
         {{-- Sidebar Stats (Right) --}}
         <div class="w-full lg:w-80 space-y-6">
-            {{-- GRAFIK GARIS DENGAN GRID --}}
             <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm">
                 <h3 class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-4">Tren Transaksi (6 Bln)</h3>
                 <div class="h-48 relative px-2">
@@ -211,7 +293,6 @@
     </div>
 </div>
 
-{{-- CSS KHUSUS SCROLLBAR --}}
 <style>
     .custom-scrollbar::-webkit-scrollbar { width: 4px; }
     .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
@@ -219,20 +300,16 @@
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #064e3b; }
 </style>
 
-{{-- SCRIPT SWEETALERT2 DENGAN DESAIN KHUSUS --}}
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // FUNGSI PENCARIAN DINAMIS
     function searchTable() {
         let input = document.getElementById("searchInput").value.toUpperCase();
         let containers = document.getElementsByClassName("transaction-item");
-
         for (let i = 0; i < containers.length; i++) {
             let table = containers[i].getElementsByClassName("searchable-table")[0];
             if (!table) continue;
             let tr = table.getElementsByTagName("tr");
             let containerHasMatch = false;
-
             for (let j = 0; j < tr.length; j++) {
                 let nameCell = tr[j].getElementsByClassName("name-cell")[0];
                 if (nameCell) {
@@ -252,7 +329,7 @@
     function confirmGenerate() {
         Swal.fire({
             title: 'TAGIH IURAN MANUAL?',
-            html: `<span class="text-[10px] text-gray-400 uppercase font-black tracking-widest">Sistem akan memproses tagihan bulan ini tanpa duplikasi.</span>`,
+            html: `<span class="text-[10px] text-gray-400 uppercase font-black tracking-widest">Sistem akan memproses tagihan bulan ini.</span>`,
             icon: 'question',
             iconColor: '#147a54',
             showCancelButton: true,

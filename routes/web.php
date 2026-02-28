@@ -17,6 +17,8 @@ use App\Http\Controllers\Peserta\KelompokController;
 use App\Http\Controllers\Peserta\UndianController;
 use App\Http\Controllers\Peserta\ProfilePesertaController;
 use App\Http\Controllers\Peserta\TransaksiPesertaController;
+use App\Http\Controllers\Peserta\JadwalController;
+use App\Http\Controllers\Peserta\LaporanPesertaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -103,4 +105,8 @@ Route::middleware(['auth', 'role:peserta'])
         // Transaksi Pembayaran Routes
         Route::get('/transaksi', [TransaksiPesertaController::class, 'index'])->name('transaksi.index');
         Route::get('/transaksi/get-token/{id}', [TransaksiPesertaController::class, 'getToken'])->name('transaksi.getToken');
+        // Jadwal & Tagihan Routes
+        Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
+        // Laporan Pembayaran Routes
+        Route::get('/laporan', [LaporanPesertaController::class, 'index'])->name('laporan.index');
     });
