@@ -48,17 +48,24 @@
                 {{-- NOTIFIKASI DROPDOWN --}}
                 <div class="relative" id="notif-wrapper">
                     @php 
-                        // 1. Cek apakah ada undian baru dalam 7 hari terakhir
+                        // 1. Cek Undian Baru (7 hari terakhir)
                         $adaUndianBaru = \App\Models\UndianArisan::where('created_at', '>=', now()->subDays(7))->exists();
-                        
-                        // 2. Logika: Jika ada undian DAN belum diklik, maka hitung sebagai 1 notif
                         $displayUndianNotif = ($adaUndianBaru && !session('undian_notif_read')) ? 1 : 0;
+
+                        // 2. LOGIKA PEMBAYARAN DINAMIS
+                        // Ambil data peserta yang sedang login
+                        $peserta = \App\Models\PesertaArisan::where('id_user', Auth::id())->first();
                         
-                        // 3. Simulasi Notif Iuran (Selalu 1 jika belum dibaca)
-                        $adaTagihan = !session('iuran_notif_read') ? 1 : 0; 
-                        
-                        // Total badge sekarang maksimal hanya 2 (1 Undian + 1 Iuran)
-                        $totalBadge = $displayUndianNotif + $adaTagihan;
+                        $jumlahTagihanPending = 0;
+                        if($peserta) {
+                            // Hitung berapa transaksi yang statusnya masih 'pending'
+                            $jumlahTagihanPending = \App\Models\TransaksiPembayaran::where('id_pesertaarisan', $peserta->id_pesertaarisan)
+                                                    ->where('status_pembayaran', 'pending')
+                                                    ->count();
+                        }
+
+                        // Total badge (1 jika ada undian + jumlah tagihan pending)
+                        $totalBadge = $displayUndianNotif + ($jumlahTagihanPending > 0 ? 1 : 0);
                     @endphp
 
                     <button onclick="toggleNotif()" class="relative p-2 text-gray-400 bg-white rounded-full border border-gray-100 shadow-sm hover:text-green-700 hover:bg-green-50 transition-all active:scale-90 outline-none">
@@ -97,16 +104,22 @@
                             </a>
                             @endif
 
-                            {{-- Notif 2: Tagihan Iuran --}}
-                            @if($adaTagihan > 0)
-                            <a href="#" class="block p-4 border-b border-gray-50 hover:bg-orange-50/30 transition-all group">
+                            {{-- Notif 2: Tagihan Iuran Dinamis --}}
+                            @if($jumlahTagihanPending > 0)
+                            <a href="{{ route('peserta.transaksi.index') }}" class="block p-4 border-b border-gray-50 hover:bg-orange-50/30 transition-all group">
                                 <div class="flex gap-4">
                                     <div class="w-10 h-10 bg-orange-100 text-orange-600 rounded-2xl flex items-center justify-center shrink-0 group-hover:rotate-12 transition-transform">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1c-1.11 0-2.08-.402-2.599-1M12 8V7m0 11v1m0-1c-1.11 0-2.08-.402-2.599-1M12 18V17m0 1c1.11 0 2.08.402 2.599 1M12 18V17"/></svg>
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1c-1.11 0-2.08-.402-2.599-1M12 8V7m0 11v1m0-1c-1.11 0-2.08-.402-2.599-1M12 18V17m0 1c1.11 0 2.08.402 2.599 1M12 18V17"/>
+                                        </svg>
                                     </div>
                                     <div>
-                                        <p class="text-xs font-black text-slate-800 leading-tight mb-1 uppercase text-orange-600">Waktunya Bayar Iuran</p>
-                                        <p class="text-[10px] text-gray-500 leading-relaxed italic">Tagihan arisan bulan ini sudah tersedia. Segera lakukan pembayaran.</p>
+                                        <p class="text-xs font-black text-slate-800 leading-tight mb-1 uppercase text-orange-600">
+                                            Ada {{ $jumlahTagihanPending }} Tagihan Menunggu
+                                        </p>
+                                        <p class="text-[10px] text-gray-500 leading-relaxed italic">
+                                            Segera selesaikan pembayaran untuk periode bulan ini agar status iuran Anda tetap lancar.
+                                        </p>
                                     </div>
                                 </div>
                             </a>

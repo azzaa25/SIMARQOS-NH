@@ -7,24 +7,19 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script type="text/javascript"
+        src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('services.midtrans.clientKey') }}"></script>
 
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; background: #f8fafc; color: #1e293b; scroll-behavior: smooth; }
-        
-        /* Glass Effect */
         .glass-nav { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(15px); border-bottom: 1px solid rgba(255, 255, 255, 0.3); }
         .glass-card { background: rgba(255, 255, 255, 0.8); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.5); }
-        
-        /* Animations */
         @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         .animate-float { animation: float 5s ease-in-out infinite; }
-        
         .blob { position: absolute; z-index: -1; filter: blur(80px); opacity: 0.4; }
-        
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #147a54; border-radius: 10px; }
+        .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
     </style>
 </head>
 
@@ -43,15 +38,16 @@
                 </div>
                 <div>
                     <span class="block text-sm font-black text-gray-900 leading-none">MASJID NURUL HUDA</span>
-                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest uppercase">Digital Platform</span>
+                    <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Digital Platform</span>
                 </div>
             </div>
             
             <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-gray-500">
                 <a href="#hero" class="hover:text-[#147a54] transition-colors">Beranda</a>
                 <a href="#fitur" class="hover:text-[#147a54] transition-colors">Fitur</a>
+                <a href="#sosial" class="hover:text-[#147a54] transition-colors">Kegiatan Sosial</a>
                 <a href="#masjid" class="hover:text-[#147a54] transition-colors">Informasi Masjid</a>
-                <a href="/login" class="px-6 py-3 bg-[#147a54] text-white rounded-full shadow-lg shadow-green-900/20 hover:bg-[#0d5c3f] transition-all">Masuk</a>
+                <a href="{{ route('login') }}" class="px-6 py-3 bg-[#147a54] text-white rounded-full shadow-lg shadow-green-900/20 hover:bg-[#0d5c3f] transition-all">Masuk</a>
             </div>
         </div>
     </nav>
@@ -73,7 +69,7 @@
                     Platform digital khusus jamaah Masjid Nurul Huda untuk mengelola tabungan Arisan Qurban secara transparan, otomatis, dan amanah.
                 </p>
                 <div class="flex items-center gap-4">
-                    <a href="/register" class="px-10 py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all hover:-translate-y-1">Mulai Daftar</a>
+                    <a href="{{ route('register') }}" class="px-10 py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all hover:-translate-y-1">Mulai Daftar</a>
                     <a href="#fitur" class="px-10 py-5 bg-white text-slate-600 font-black rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all">Pelajari Fitur</a>
                 </div>
             </div>
@@ -124,6 +120,90 @@
         </div>
     </section>
 
+    <section id="sosial" class="py-24 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                <div class="max-w-xl">
+                    <h2 class="text-xs font-black text-[#147a54] uppercase tracking-[0.4em] mb-4">Aksi Nyata Kami</h2>
+                    <p class="text-4xl font-black text-slate-900 leading-tight">Bantu Sesama Melalui <br>Kegiatan Sosial Masjid</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Dana Terkumpul</p>
+                    <p class="text-4xl font-black text-[#147a54]">Rp {{ number_format($totalDonasi ?? 0, 0, ',', '.') }}</p>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8">
+                @forelse($kegiatan as $item)
+                <div class="glass-card rounded-[40px] overflow-hidden flex flex-col hover:shadow-2xl transition-all border-b-4 border-b-[#147a54]">
+                    <div class="relative h-48 overflow-hidden">
+                        <img src="{{ $item->pamflet_kegiatan ? asset('storage/'.$item->pamflet_kegiatan) : 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?auto=format&fit=crop&q=80&w=800' }}" 
+                             alt="{{ $item->nama_kegiatan }}" class="w-full h-full object-cover">
+                        <div class="absolute top-4 left-4">
+                            <span class="px-3 py-1 bg-white/90 backdrop-blur-md text-[#147a54] text-[10px] font-black rounded-full uppercase tracking-wider shadow-sm">
+                                {{ $item->kategori->nama_kategori ?? 'Umum' }}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-8 flex-1 flex flex-col">
+                        <h3 class="text-xl font-black text-slate-900 mb-3">{{ $item->nama_kegiatan }}</h3>
+                        <p class="text-sm text-slate-500 leading-relaxed mb-6 line-clamp-3">
+                            {{ $item->deskripsi_kegiatan }}
+                        </p>
+                        
+                        <div class="mt-auto space-y-3">
+                            @php
+                                $danaMasuk = \App\Models\DanaSosial::where('id_kegiatan', $item->id_kegiatan)
+                                            ->whereIn('status_pembayaran', ['success', 'settlement'])
+                                            ->sum('nominal');
+                                $persentase = $item->target_donasi > 0 ? ($danaMasuk / $item->target_donasi) * 100 : 0;
+                                if($persentase > 100) $persentase = 100;
+                            @endphp
+
+                            <div class="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-400">
+                                <span>Terkumpul</span>
+                                <span>{{ round($persentase) }}%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-[#147a54] rounded-full" style="width: {{ $persentase }}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center pt-4">
+                                <div>
+                                    <p class="text-[10px] font-bold text-gray-400 uppercase">Target</p>
+                                    <p class="text-sm font-black text-slate-900">Rp {{ number_format($item->target_donasi, 0, ',', '.') }}</p>
+                                </div>
+                                <div class="flex gap-2 pt-4">
+                                    <a href="{{ route('sosial.detail', $item->id_kegiatan) }}" 
+                                    class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-widest text-center">
+                                        Detail
+                                    </a>
+
+                                    <button onclick="openDonasiModal('{{ $item->id_kegiatan }}', '{{ $item->nama_kegiatan }}')" 
+                                            class="flex-1 px-4 py-2.5 bg-[#147a54] text-white text-[10px] font-black rounded-xl hover:bg-[#0d5c3f] transition-colors uppercase tracking-widest">
+                                        Donasi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @empty
+                <div class="col-span-3 py-20 text-center glass-card rounded-[40px]">
+                    <p class="text-slate-400 font-bold italic tracking-widest">Belum ada kegiatan sosial aktif saat ini.</p>
+                </div>
+                @endforelse
+            </div>
+
+            <div class="mt-16 text-center">
+                <a href="{{ route('sosial.semua') }}" class="inline-flex items-center gap-3 text-sm font-black text-[#147a54] hover:gap-5 transition-all">
+                    LIHAT SEMUA AGENDA SOSIAL 
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
     <section id="masjid" class="py-24 px-6 overflow-hidden">
         <div class="max-w-7xl mx-auto glass-card rounded-[50px] overflow-hidden grid md:grid-cols-2 shadow-2xl">
             <div class="p-12 md:p-20 space-y-8">
@@ -148,12 +228,13 @@
                     </div>
                 </div>
             </div>
-            <div class="bg-[#147a54] p-12 flex flex-col justify-center items-center text-center text-white space-y-6">
-                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center animate-pulse">
+            <div class="bg-[#147a54] p-12 flex flex-col justify-center items-center text-center text-white space-y-6 relative">
+                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center animate-pulse z-10">
                     <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 21l-8.228-9.288a5 5 0 117.454-6.67l.774.88.774-.88a5 5 0 117.454 6.67L12 21z" stroke-width="2"/></svg>
                 </div>
-                <p class="text-2xl font-black italic italic leading-tight">"Mari Membangun Ukhuwah Melalui Ibadah Qurban Bersama"</p>
-                <div class="fixed bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.2] flex items-end overflow-hidden">
+                <p class="text-2xl font-black italic leading-tight z-10">"Mari Membangun Ukhuwah Melalui Ibadah Qurban Bersama"</p>
+                
+                <div class="absolute bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.2] flex items-end overflow-hidden">
                     <svg class="w-full h-auto min-w-[1200px]" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M0 300H1200V180C1150 180 1120 150 1100 120C1080 150 1050 180 1000 180V100C1000 80 980 60 960 60H940C920 60 900 80 900 100V180C850 180 820 200 800 230C780 200 750 180 700 180V50C700 22.3858 677.614 0 650 0H550C522.386 0 500 22.3858 500 50V180C450 180 420 200 400 230C380 200 350 180 300 180V100C300 80 280 60 260 60H240C220 60 200 80 200 100V180C150 180 120 150 100 120C80 150 50 180 0 180V300Z" fill="white"/>
                     </svg>
@@ -162,19 +243,104 @@
         </div>
     </section>
 
-    <footer class="bg-white border-t border-slate-100 py-12 px-6">
-        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8 text-center md:text-left">
-            <div>
-                <p class="text-sm font-black text-[#147a54] mb-1">Masjid Nurul Huda Digital</p>
-                <p class="text-xs text-slate-400 font-medium tracking-wide italic">© 2026 Arisan Qurban & Kegiatan Sosial. Seluruh Hak Cipta Dilindungi.</p>
+    <div id="modalDonasi" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDonasiModal()"></div>
+        <div class="glass-card relative w-full max-w-md p-8 rounded-[40px] shadow-2xl border border-white/20">
+            <div class="flex justify-between items-start mb-6">
+                <div>
+                    <h3 class="text-2xl font-black text-slate-900">Infaq Terbaik</h3>
+                    <p id="namaKegiatanModal" class="text-[10px] text-[#147a54] font-black uppercase tracking-widest mt-1"></p>
+                </div>
+                <button onclick="closeDonasiModal()" class="text-slate-400 hover:text-red-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
             </div>
-            <div class="flex gap-4">
-                <a href="/login" class="text-xs font-black text-slate-400 hover:text-[#147a54] transition-colors">Login Admin</a>
-                <span class="text-slate-200">|</span>
-                <a href="/register" class="text-xs font-black text-slate-400 hover:text-[#147a54] transition-colors">Pendaftaran Peserta</a>
-            </div>
+            
+            <form id="donasiForm" class="space-y-5">
+                <input type="hidden" id="modal_id_kegiatan_hidden">
+                <div>
+                    <label class="text-[10px] font-black uppercase text-gray-400 block mb-2">Nama Donatur</label>
+                    <input type="text" id="modal_nama" placeholder="Hamba Allah" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold transition-all">
+                </div>
+                <div>
+                    <label class="text-[10px] font-black uppercase text-gray-400 block mb-2">Nominal (Rp)</label>
+                    <input type="number" id="modal_nominal" min="10000" placeholder="Contoh: 50000" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold transition-all" required>
+                </div>
+                
+                <div class="pt-4">
+                    <button type="submit" id="pay-button" class="w-full py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all flex items-center justify-center gap-3">
+                        <span>Lanjutkan Pembayaran</span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+                    </button>
+                </div>
+            </form>
         </div>
-    </footer>
+    </div>
 
+    <script>
+        function openDonasiModal(id, nama) {
+            document.getElementById('modal_id_kegiatan_hidden').value = id;
+            document.getElementById('namaKegiatanModal').innerText = nama;
+            document.getElementById('modalDonasi').classList.remove('hidden');
+            document.body.style.overflow = 'hidden'; 
+        }
+
+        function closeDonasiModal() {
+            document.getElementById('modalDonasi').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+        }
+
+        document.getElementById('donasiForm').onsubmit = function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('pay-button');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = "Memproses...";
+            btn.disabled = true;
+
+            const dataDonasi = {
+                id_kegiatan: document.getElementById('modal_id_kegiatan_hidden').value,
+                nama_donatur: document.getElementById('modal_nama').value || 'Hamba Allah',
+                nominal: document.getElementById('modal_nominal').value
+            };
+
+            fetch("{{ route('donasi.checkout') }}", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+                },
+                body: JSON.stringify(dataDonasi)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if(data.token) {
+                    window.snap.pay(data.token, {
+                        onSuccess: function(result) { window.location.reload(); },
+                        onPending: function(result) { window.location.reload(); },
+                        onError: function(result) { 
+                            alert("Pembayaran Gagal"); 
+                            btn.disabled = false; 
+                            btn.innerHTML = originalText; 
+                        },
+                        onClose: function() {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    });
+                } else {
+                    alert("Gagal mendapatkan token: " + (data.error || "Unknown error"));
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("Terjadi kesalahan sistem.");
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            });
+        };
+    </script>
 </body>
 </html>

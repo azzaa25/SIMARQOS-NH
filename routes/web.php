@@ -1,6 +1,9 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+//public controllers
+use App\Http\Controllers\WelcomeController;
+use App\Http\Controllers\DonasiController;
 // Auth Controllers
 use App\Http\Controllers\Auth\AuthController;
 // Admin Controllers
@@ -11,6 +14,7 @@ use App\Http\Controllers\Admin\UserApprovalController;
 use App\Http\Controllers\Admin\AdminManageController;
 use App\Http\Controllers\Admin\UndianArisanController;
 use App\Http\Controllers\Admin\TransaksiAdminController;
+use App\Http\Controllers\Admin\KegiatanSosialController;
 // Peserta Controllers
 use App\Http\Controllers\Peserta\DashboardPesertaController;
 use App\Http\Controllers\Peserta\KelompokController;
@@ -25,7 +29,15 @@ use App\Http\Controllers\Peserta\LaporanPesertaController;
 | Public
 |--------------------------------------------------------------------------
 */
-Route::get('/', fn () => view('welcome'));
+Route::get('/', [WelcomeController::class, 'index'])->name('welcome');
+Route::get('/agenda-sosial', [WelcomeController::class, 'semuaAgenda'])->name('sosial.semua');
+Route::get('/agenda-sosial/{id}', [WelcomeController::class, 'detailAgenda'])->name('sosial.detail');
+// Proses Checkout & Callback Midtrans (Harus Bisa Diakses Publik)
+Route::post('/donasi/checkout', [DonasiController::class, 'checkout'])->name('donasi.checkout');
+Route::post('/donasi/callback', [DonasiController::class, 'callback'])->name('donasi.callback');
+
+// Halaman Redirect setelah bayar dari Midtrans
+Route::get('/donasi/finish', [DonasiController::class, 'finish'])->name('donasi.finish');
 
 /*
 |--------------------------------------------------------------------------
@@ -72,7 +84,16 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/transaksi/verifikasi/{id}', [TransaksiAdminController::class, 'verifikasiManual'])->name('transaksi.verifikasi');
         Route::post('/transaksi/generate', [TransaksiAdminController::class, 'generateTagihan'])->name('transaksi.generate');
         Route::get('/transaksi/export', [TransaksiAdminController::class, 'exportPDF'])->name('transaksi.export');
-
+        // KEGIATAN SOSIAL ROUTES
+        Route::prefix('sosial')->as('sosial.')->group(function () {
+            Route::get('/', [KegiatanSosialController::class, 'index'])->name('index');
+            Route::post('/store', [KegiatanSosialController::class, 'store'])->name('store');
+            Route::post('/kategori', [KegiatanSosialController::class, 'storeKategori'])->name('kategori.store');
+            Route::put('/update/{id}', [KegiatanSosialController::class, 'update'])->name('update');
+            Route::delete('/delete/{id}', [KegiatanSosialController::class, 'destroy'])->name('destroy');
+            Route::post('/dana-masuk', [KegiatanSosialController::class, 'storeDanaMasuk'])->name('dana_masuk');
+            Route::post('/cairkan/{id}', [KegiatanSosialController::class, 'cairkanDana'])->name('cairkan');
+        });
     });
 
 /*

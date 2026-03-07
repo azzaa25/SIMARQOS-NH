@@ -16,26 +16,39 @@ class TransaksiAdminController extends Controller
     /**
      * Tampilan Utama Dashboard Transaksi
      */
-    public function index()
+    public function index(Request $request)
     {
-        $transaksi = TransaksiPembayaran::with('peserta')->latest()->get();
+        // 1. Ambil input filter
+        $bulanFilter = $request->get('bulan', date('n'));
+        $tahunFilter = $request->get('tahun', date('Y'));
 
-        // --- FITUR TUNGGAKAN ---
+        // 2. Query transaksi yang DIFILTER (untuk tabel dan saldo tunai/transfer)
+        $query = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
+            ->whereMonth('created_at', $bulanFilter)
+            ->whereYear('created_at', $tahunFilter);
+
+        $transaksi = $query->latest()->get();
+
+        // 3. SALDO TOTAL (Keseluruhan Tanpa Filter Bulan/Tahun)
+        // Ini akan menampilkan total uang masuk dari awal sampai kapanpun
+        $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
+
+        // 4. Statistik pendukung lainnya (Tetap mengikuti filter agar relevan dengan tabel)
+        $rataRata = TransaksiPembayaran::where('status_pembayaran', 'sukses')
+            ->whereMonth('created_at', $bulanFilter)
+            ->whereYear('created_at', $tahunFilter)
+            ->avg('nominal') ?? 0;
+
         $tunggakan = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
-        ->where('status_pembayaran', 'pending')
-        ->orderBy('created_at', 'asc')
-        ->get();
+            ->where('status_pembayaran', 'pending')
+            ->orderBy('created_at', 'asc')
+            ->get();
 
-        // Hitung total peserta yang aktif & nonaktif saja
         $totalPeserta = PesertaArisan::whereHas('user', function ($q) {
             $q->whereIn('status', ['aktif', 'nonaktif']);
         })->count();
 
         $totalSkema = SkemaArisan::count();
-        $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
-
-        $rataRata = TransaksiPembayaran::where('status_pembayaran', 'sukses')->avg('nominal');
-        $tertinggi = TransaksiPembayaran::where('status_pembayaran', 'sukses')->max('nominal');
         
         $metodeFavorit = TransaksiPembayaran::where('status_pembayaran', 'sukses')
             ->select('metode_pembayaran', DB::raw('count(*) as total'))
@@ -44,31 +57,92 @@ class TransaksiAdminController extends Controller
             ->first();
 
         $grafikBulanan = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->select(DB::raw('COUNT(*) as total'), DB::raw('MONTH(created_at) as bulan'))
+            ->select(DB::raw('SUM(nominal) as total'), DB::raw('MONTH(created_at) as bulan'))
+            ->where('created_at', '>=', Carbon::now()->subMonths(6))
             ->groupBy('bulan')
             ->orderBy('bulan', 'asc')
-            ->take(6)
             ->pluck('total');
 
         return view('admin.transaksi.index', compact(
             'transaksi', 'tunggakan', 'totalPeserta', 'totalSkema', 'totalKas', 
-            'rataRata', 'tertinggi', 'metodeFavorit', 'grafikBulanan'
+            'rataRata', 'metodeFavorit', 'grafikBulanan'
         ));
     }
-
     public function callback(Request $request)
     {
         $serverKey = config('services.midtrans.serverKey');
-        $hashed = hash("sha512", $request->order_id . $request->status_code . $request->gross_amount . $serverKey);
 
-        if ($hashed == $request->signature_key) {
-            if ($request->transaction_status == 'capture' || $request->transaction_status == 'settlement') {
-                $transaksi = TransaksiPembayaran::where('order_id', $request->order_id)->first();
+        $hashed = hash(
+            "sha512",
+            $request->order_id .
+            $request->status_code .
+            $request->gross_amount .
+            $serverKey
+        );
+
+        if ($hashed != $request->signature_key) {
+            return response()->json(['status' => 'invalid signature'], 403);
+        }
+
+        $orderId = $request->order_id;
+        $status = $request->transaction_status;
+
+        /*
+        ======================================
+        TRANSAKSI ARISAN (Prefix: INV)
+        ======================================
+        */
+        if (str_starts_with($orderId, 'INV')) {
+            if ($status == 'capture' || $status == 'settlement') {
+                $transaksi = TransaksiPembayaran::where('order_id', $orderId)->first();
                 if ($transaksi) {
                     $transaksi->update([
                         'status_pembayaran' => 'sukses',
                         'metode_pembayaran' => $request->payment_type,
                     ]);
+                }
+            }
+        }
+
+        /*
+        ======================================
+        TRANSAKSI DONASI (Prefix: DONASI)
+        ======================================
+        */
+        elseif (str_starts_with($orderId, 'DONASI')) {
+            if ($status == 'capture' || $status == 'settlement') {
+                try {
+                    // Ambil Metadata dari Midtrans
+                    $metadata = $request->metadata;
+                    
+                    // Jika metadata berbentuk string JSON (sering terjadi di Midtrans), kita decode
+                    if (is_string($metadata)) {
+                        $metadata = json_decode($metadata, true);
+                    }
+
+                    $namaDonatur = $metadata['nama_donatur'] ?? 'Hamba Allah';
+                    $idKegiatan  = $metadata['id_kegiatan'] ?? null;
+                    $keterangan  = $metadata['keterangan'] ?? 'Donasi Online';
+
+                    // Simpan ke tabel dana_sosial
+                    DB::table('dana_sosial')->updateOrInsert(
+                        ['order_id' => $orderId],
+                        [
+                            'nama_donatur'         => $namaDonatur,
+                            'id_kegiatan'          => $idKegiatan,
+                            'tipe_dana'            => 'masuk',
+                            'nominal'              => $request->gross_amount,
+                            'metode_pembayaran'    => $request->payment_type,
+                            'status_pembayaran'    => 'success',
+                            'keterangan_transaksi' => $keterangan,
+                            'tanggal_input'        => now(),
+                        ]
+                    );
+
+                    \Log::info("Callback Donasi Berhasil: " . $orderId);
+
+                } catch (\Exception $e) {
+                    \Log::error('Gagal simpan donasi di Callback: ' . $e->getMessage());
                 }
             }
         }

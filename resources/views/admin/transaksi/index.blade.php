@@ -7,7 +7,7 @@
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-1">Transaksi Pembayaran</h1>
-            <p class="text-sm text-gray-400 font-medium italic uppercase tracking-wider">Riwayat iuran (Otomatis setiap tanggal 1)</p>
+            <p class="text-sm text-gray-400 font-medium italic uppercase tracking-wider">Riwayat iuran</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
@@ -28,6 +28,33 @@
                 Ekspor PDF
             </a>
         </div>
+    </div>
+
+    {{-- FITUR BARU: FILTER PERIODE --}}
+    <div class="mb-8 bg-white p-4 rounded-[25px] border border-gray-100 shadow-sm flex flex-wrap gap-4 items-center">
+        <form action="" method="GET" class="flex flex-wrap gap-4 items-center w-full">
+            <div class="flex flex-col">
+                <label class="text-[9px] font-black text-gray-400 uppercase ml-2 mb-1">Bulan</label>
+                <select name="bulan" class="bg-gray-50 border-none text-[10px] font-bold uppercase rounded-xl px-4 py-2 focus:ring-2 focus:ring-green-800 transition-all">
+                    @foreach(range(1, 12) as $m)
+                        <option value="{{ $m }}" {{ request('bulan', date('n')) == $m ? 'selected' : '' }}>
+                            {{ \Carbon\Carbon::create()->month($m)->translatedFormat('F') }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="flex flex-col">
+                <label class="text-[9px] font-black text-gray-400 uppercase ml-2 mb-1">Tahun</label>
+                <select name="tahun" class="bg-gray-50 border-none text-[10px] font-bold uppercase rounded-xl px-4 py-2 focus:ring-2 focus:ring-green-800 transition-all">
+                    @for($y = date('Y'); $y >= 2023; $y--)
+                        <option value="{{ $y }}" {{ request('tahun', date('Y')) == $y ? 'selected' : '' }}>{{ $y }}</option>
+                    @endfor
+                </select>
+            </div>
+            <button type="submit" class="mt-4 bg-green-50 text-green-700 hover:bg-green-700 hover:text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase transition-all">
+                Filter Data
+            </button>
+        </form>
     </div>
 
     <div class="flex flex-col lg:flex-row gap-6">
@@ -302,6 +329,27 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // FITUR ALERT SESSION
+    @if(session('success'))
+        Swal.fire({
+            icon: 'success',
+            title: 'BERHASIL',
+            text: "{{ session('success') }}",
+            confirmButtonColor: '#064e3b',
+            customClass: { popup: 'rounded-[32px]' }
+        });
+    @endif
+
+    @if(session('error'))
+        Swal.fire({
+            icon: 'error',
+            title: 'GAGAL',
+            text: "{{ session('error') }}",
+            confirmButtonColor: '#064e3b',
+            customClass: { popup: 'rounded-[32px]' }
+        });
+    @endif
+
     function searchTable() {
         let input = document.getElementById("searchInput").value.toUpperCase();
         let containers = document.getElementsByClassName("transaction-item");
