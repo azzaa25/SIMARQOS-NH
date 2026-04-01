@@ -62,26 +62,36 @@
                     </span>
                     Tersedia Untuk Jamaah
                 </div>
+                
+                {{-- Perbaikan Judul --}}
                 <h1 class="text-5xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight">
-                    Ibadah Qurban Jadi <span class="text-[#147a54]">Lebih Ringan</span> & Terkelola.
+                    Ibadah <span class="text-[#147a54]">Qurban</span> & Aksi <span class="text-[#147a54]">Sosial</span> Jadi Lebih Mudah.
                 </h1>
+                
+                {{-- Perbaikan Deskripsi --}}
                 <p class="text-slate-500 text-lg leading-relaxed max-w-lg">
-                    Platform digital khusus jamaah Masjid Nurul Huda untuk mengelola tabungan Arisan Qurban secara transparan, otomatis, dan amanah.
+                    Platform digital amanah Masjid Nurul Huda untuk pengelolaan Arisan Qurban yang terencana serta penyaluran bantuan sosial jamaah secara transparan dan otomatis.
                 </p>
+                
                 <div class="flex items-center gap-4">
                     <a href="{{ route('register') }}" class="px-10 py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all hover:-translate-y-1">Mulai Daftar</a>
-                    <a href="#fitur" class="px-10 py-5 bg-white text-slate-600 font-black rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all">Pelajari Fitur</a>
+                    <a href="#sosial" class="px-10 py-5 bg-white text-slate-600 font-black rounded-2xl border border-slate-100 shadow-sm hover:bg-slate-50 transition-all">Kegiatan Sosial</a>
                 </div>
             </div>
             
             <div class="relative hidden md:block">
                 <div class="glass-card p-4 rounded-[40px] shadow-2xl animate-float">
-                    <img src="https://images.unsplash.com/photo-1590076215667-875d4ef2d97e?auto=format&fit=crop&q=80&w=800" alt="Mosque" class="rounded-[30px] w-full object-cover aspect-square">
+                    {{-- Perbaikan Link Gambar: Menggunakan Unsplash Mosque yang lebih stabil --}}
+                    <img src="https://images.unsplash.com/photo-1591604129939-f1efa4d9f7fa?auto=format&fit=crop&q=80&w=800" 
+                        alt="Masjid Nurul Huda" 
+                        class="rounded-[30px] w-full object-cover aspect-square shadow-inner">
                 </div>
+                
+                {{-- Badge Statistik dengan Data Dinamis --}}
                 <div class="absolute -bottom-10 -left-10 glass-card p-6 rounded-3xl shadow-xl border-l-4 border-l-[#147a54]">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Peserta</p>
-                    <p class="text-3xl font-black text-slate-900">250+</p>
-                    <p class="text-[10px] font-bold text-green-600">Aktif Tahun Ini</p>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Peserta Arisan</p>
+                    <p class="text-3xl font-black text-slate-900">{{ $totalPeserta ?? 0 }}</p>
+                    <p class="text-[10px] font-bold text-green-600 italic">Terverifikasi Aktif</p>
                 </div>
             </div>
         </div>
@@ -128,7 +138,7 @@
                     <p class="text-4xl font-black text-slate-900 leading-tight">Bantu Sesama Melalui <br>Kegiatan Sosial Masjid</p>
                 </div>
                 <div class="text-right">
-                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Dana Terkumpul</p>
+                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Total Dana Aktif Terkumpul</p>
                     <p class="text-4xl font-black text-[#147a54]">Rp {{ number_format($totalDonasi ?? 0, 0, ',', '.') }}</p>
                 </div>
             </div>
@@ -154,7 +164,9 @@
                         
                         <div class="mt-auto space-y-3">
                             @php
+                                // PERBAIKAN: Hanya hitung tipe_dana 'masuk'
                                 $danaMasuk = \App\Models\DanaSosial::where('id_kegiatan', $item->id_kegiatan)
+                                            ->where('tipe_dana', 'masuk')
                                             ->whereIn('status_pembayaran', ['success', 'settlement'])
                                             ->sum('nominal');
                                 $persentase = $item->target_donasi > 0 ? ($danaMasuk / $item->target_donasi) * 100 : 0;
@@ -173,9 +185,9 @@
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">Target</p>
                                     <p class="text-sm font-black text-slate-900">Rp {{ number_format($item->target_donasi, 0, ',', '.') }}</p>
                                 </div>
-                                <div class="flex gap-2 pt-4">
+                                <div class="flex gap-2">
                                     <a href="{{ route('sosial.detail', $item->id_kegiatan) }}" 
-                                    class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-widest text-center">
+                                    class="flex-1 px-4 py-2.5 bg-slate-100 text-slate-600 text-[10px] font-black rounded-xl hover:bg-slate-200 transition-colors uppercase tracking-widest text-center whitespace-nowrap">
                                         Detail
                                     </a>
 
@@ -209,32 +221,81 @@
             <div class="p-12 md:p-20 space-y-8">
                 <h2 class="text-3xl font-black text-slate-900">Mengenal Masjid <br><span class="text-[#147a54]">Nurul Huda</span></h2>
                 <div class="space-y-6">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[#147a54]">
+                    <a href="https://www.google.com/maps/search/?api=1&query=Masjid+Nurul+Huda+Desa+Titik+Kediri" 
+                    target="_blank" 
+                    class="flex items-start gap-4 group cursor-pointer">
+                        <div class="w-10 h-10 shrink-0 bg-slate-100 rounded-lg flex items-center justify-center text-[#147a54] group-hover:bg-[#147a54] group-hover:text-white transition-all duration-300">
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                         </div>
-                        <p class="text-sm font-medium text-slate-600 italic">Desa Titik, Kediri, Jawa Timur<br><span class="text-xs font-bold text-gray-400 not-italic uppercase tracking-widest">Titik Village, Kediri Regency</span></p>
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="p-4 bg-slate-50 rounded-2xl">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kajian Rutin</p>
-                            <p class="text-xs font-bold text-slate-700">Setiap Minggu Malam</p>
+                        <div>
+                            <p class="text-sm font-medium text-slate-600 italic group-hover:text-[#147a54] transition-colors">Desa Titik, Kediri, Jawa Timur</p>
+                            <span class="text-[10px] font-bold text-gray-400 not-italic uppercase tracking-widest group-hover:text-slate-500 transition-colors">Klik untuk Petunjuk Arah</span>
                         </div>
+                    </a>
+                    
+                    <div class="grid grid-cols-1 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl overflow-hidden">
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                Jadwal Rutinan & Kajian
+                            </p>
+                            <div class="relative flex overflow-hidden bg-white/50 py-2 rounded-xl border border-green-50">
+                                <div class="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-[#f8fafc] to-transparent z-10"></div>
+                                <div class="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-[#f8fafc] to-transparent z-10"></div>
+
+                                <div class="animate-marquee whitespace-nowrap flex items-center">
+                                    <span class="text-[11px] font-bold text-slate-700 tracking-wide uppercase">
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Kajian Bapak-bapak:</span> Selasa Malam Rabu 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Kajian Ibu-ibu:</span> Rabu Malam Kamis 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Rutinan Diba'an Laki-laki:</span> Hari Kamis 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Rutinan Diba'an Perempuan:</span> Hari Jumat
+                                    </span>
+                                    
+                                    <span class="text-[11px] font-bold text-slate-700 tracking-wide uppercase ml-6">
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Kajian Bapak-bapak:</span> Selasa Malam Rabu 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Kajian Ibu-ibu:</span> Rabu Malam Kamis 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Rutinan Diba'an Laki-laki:</span> Kamis Malam Jumat 
+                                        <span class="mx-6 text-slate-300">|</span>
+                                        <span class="text-[#147a54] bg-green-50 px-2 py-1 rounded">Rutinan Diba'an Perempuan:</span> Jumat Malam Sabtu
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="p-4 bg-slate-50 rounded-2xl">
-                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kapasitas</p>
-                            <p class="text-xs font-bold text-slate-700">500+ Jamaah</p>
+                            <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Kapasitas Utama</p>
+                            <p class="text-xs font-bold text-slate-700">500+ Jamaah Terakomodasi</p>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="bg-[#147a54] p-12 flex flex-col justify-center items-center text-center text-white space-y-6 relative">
-                <div class="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center animate-pulse z-10">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 21l-8.228-9.288a5 5 0 117.454-6.67l.774.88.774-.88a5 5 0 117.454 6.67L12 21z" stroke-width="2"/></svg>
+            
+            <div class="bg-[#147a54] p-12 md:p-20 flex flex-col justify-center items-center text-center text-white space-y-8 relative overflow-hidden">
+                {{-- Ikon Variatif (Z-index 10 agar di atas pattern) --}}
+                <div class="flex items-center gap-4 z-10">
+                    <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center animate-pulse shadow-2xl">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                        </svg>
+                    </div>
                 </div>
-                <p class="text-2xl font-black italic leading-tight z-10">"Mari Membangun Ukhuwah Melalui Ibadah Qurban Bersama"</p>
+
+                <div class="z-10 space-y-4 max-w-lg">
+                    <h3 class="text-3xl md:text-4xl font-black leading-tight tracking-tight">
+                        Sempurnakan <span class="text-green-200">Qurban</span>, <br> 
+                        Perluas <span class="text-green-200">Kepedulian Sosial</span>.
+                    </h3>
+                    <p class="text-lg font-medium italic opacity-90">
+                        "Menabung amanah untuk ibadah qurban yang terencana, <br class="hidden md:block"> menebar manfaat nyata bagi sesama melalui aksi sosial."
+                    </p>
+                </div>
                 
-                <div class="absolute bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.2] flex items-end overflow-hidden">
+                <div class="absolute bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.15] flex items-end overflow-hidden">
                     <svg class="w-full h-auto min-w-[1200px]" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M0 300H1200V180C1150 180 1120 150 1100 120C1080 150 1050 180 1000 180V100C1000 80 980 60 960 60H940C920 60 900 80 900 100V180C850 180 820 200 800 230C780 200 750 180 700 180V50C700 22.3858 677.614 0 650 0H550C522.386 0 500 22.3858 500 50V180C450 180 420 200 400 230C380 200 350 180 300 180V100C300 80 280 60 260 60H240C220 60 200 80 200 100V180C150 180 120 150 100 120C80 150 50 180 0 180V300Z" fill="white"/>
                     </svg>
@@ -342,5 +403,20 @@
             });
         };
     </script>
+    <style>
+    @keyframes marquee {
+        0% { transform: translateX(0); }
+        100% { transform: translateX(-50%); }
+    }
+    .animate-marquee {
+        animation: marquee 25s linear infinite;
+        display: flex;
+        width: max-content;
+    }
+    /* Berhenti saat kursor diarahkan agar mudah dibaca */
+    .animate-marquee:hover {
+        animation-play-state: paused;
+    }
+</style>
 </body>
 </html>

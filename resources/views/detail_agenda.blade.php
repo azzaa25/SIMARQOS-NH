@@ -74,9 +74,12 @@
                     
                     <div class="mt-8 p-8 bg-white rounded-[35px] border border-slate-100 shadow-sm">
                         @php
+                            // PERBAIKAN: Tambahkan filter tipe_dana = 'masuk'
                             $danaMasuk = \App\Models\DanaSosial::where('id_kegiatan', $item->id_kegiatan)
+                                        ->where('tipe_dana', 'masuk') 
                                         ->whereIn('status_pembayaran', ['success', 'settlement'])
                                         ->sum('nominal');
+                            
                             $persentase = $item->target_donasi > 0 ? ($danaMasuk / $item->target_donasi) * 100 : 0;
                             if($persentase > 100) $persentase = 100;
                         @endphp
@@ -85,7 +88,8 @@
                             <span class="text-lg font-black text-[#147a54]">{{ round($persentase) }}%</span>
                         </div>
                         <div class="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full bg-[#147a54] rounded-full transition-all duration-1000" style="width: {{ $persentase }}%"></div>
+                            {{-- Warna progress bar berubah jadi abu-abu jika selesai --}}
+                            <div class="h-full {{ $item->status_kegiatan == 'selesai' ? 'bg-gray-400' : 'bg-[#147a54]' }} rounded-full transition-all duration-1000" style="width: {{ $persentase }}%"></div>
                         </div>
                         <p class="mt-4 text-[11px] font-bold text-slate-400 text-center uppercase tracking-widest">
                             Terkumpul: <span class="text-slate-900 font-black">Rp {{ number_format($danaMasuk, 0, ',', '.') }}</span>
@@ -99,40 +103,72 @@
                         <div class="absolute top-0 right-0 w-32 h-32 bg-green-50 rounded-bl-[100px] -z-0 opacity-50"></div>
                         
                         <div class="relative z-10 space-y-8">
-                            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-green-100 text-[#147a54] rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
+                            <div class="inline-flex items-center gap-2 px-4 py-1.5 {{ $item->status_kegiatan == 'selesai' ? 'bg-gray-100 text-gray-500' : 'bg-green-100 text-[#147a54]' }} rounded-full text-[10px] font-black uppercase tracking-[0.2em]">
                                 <span class="relative flex h-2 w-2">
-                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-                                    <span class="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                                    @if($item->status_kegiatan != 'selesai')
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-green-600"></span>
+                                    @else
+                                        <span class="relative inline-flex rounded-full h-2 w-2 bg-gray-400"></span>
+                                    @endif
                                 </span>
-                                Agenda Sosial Masjid
+                                {{ $item->status_kegiatan == 'selesai' ? 'Agenda Telah Selesai' : 'Agenda Sosial Masjid' }}
                             </div>
                             
                             <h1 class="text-4xl md:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight">
                                 {{ $item->nama_kegiatan }}
                             </h1>
-                            
-                            <div class="flex flex-wrap gap-8 py-6 border-y border-slate-100">
-                                <div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Target Donasi</p>
-                                    <p class="text-3xl font-black text-slate-900">Rp {{ number_format($item->target_donasi, 0, ',', '.') }}</p>
-                                </div>
-                                <div class="h-12 w-[1px] bg-slate-100 hidden md:block"></div>
-                                <div>
-                                    <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
-                                    <p class="text-sm font-black text-green-600 uppercase tracking-wider bg-green-50 px-3 py-1 rounded-lg inline-block">Aktif / Terbuka</p>
-                                </div>
-                            </div>
 
-                            <div class="prose prose-slate max-w-none">
-                                <p class="text-slate-600 text-lg leading-relaxed whitespace-pre-line font-medium">
-                                    {{ $item->deskripsi_kegiatan }}
-                                </p>
-                            </div>
+                            @if($item->status_kegiatan != 'selesai')
+                                <div class="flex flex-wrap gap-8 py-6 border-y border-slate-100">
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Target Donasi</p>
+                                        <p class="text-3xl font-black text-slate-900">Rp {{ number_format($item->target_donasi, 0, ',', '.') }}</p>
+                                    </div>
+                                    <div class="h-12 w-[1px] bg-slate-100 hidden md:block"></div>
+                                    <div>
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
+                                        <p class="text-sm font-black text-green-600 uppercase tracking-wider bg-green-50 px-3 py-1 rounded-lg inline-block">Aktif / Terbuka</p>
+                                    </div>
+                                </div>
 
-                            <button onclick="openDonasiModal('{{ $item->id_kegiatan }}', '{{ $item->nama_kegiatan }}')" 
-                                    class="w-full md:w-auto px-12 py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all hover:-translate-y-1 text-sm uppercase tracking-widest">
-                                Salurkan Infaq Sekarang
-                            </button>
+                                <div class="prose prose-slate max-w-none">
+                                    <p class="text-slate-600 text-lg leading-relaxed whitespace-pre-line font-medium">
+                                        {{ $item->deskripsi_kegiatan }}
+                                    </p>
+                                </div>
+
+                                <button onclick="openDonasiModal('{{ $item->id_kegiatan }}', '{{ $item->nama_kegiatan }}')" 
+                                        class="w-full md:w-auto px-12 py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all hover:-translate-y-1 text-sm uppercase tracking-widest">
+                                    Salurkan Infaq Sekarang
+                                </button>
+                            @else
+                                <div class="space-y-8">
+                                    <div class="p-6 bg-blue-50 rounded-3xl border border-blue-100">
+                                        <p class="text-blue-700 font-bold text-sm">Alhamdulillah! Kegiatan ini telah terlaksana. Terima kasih kepada seluruh donatur atas kontribusi terbaiknya.</p>
+                                    </div>
+
+                                    <div>
+                                        <h3 class="text-xl font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-3">
+                                            <svg class="w-6 h-6 text-[#147a54]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                            Dokumentasi Kegiatan
+                                        </h3>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            @if($item->dokumentasi && count($item->dokumentasi) > 0)
+                                                @foreach($item->dokumentasi as $foto)
+                                                    <div class="rounded-3xl overflow-hidden shadow-md h-64 border-4 border-white group">
+                                                        <img src="{{ asset('storage/' . $foto) }}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700">
+                                                    </div>
+                                                @endforeach
+                                            @else
+                                                <div class="col-span-full py-12 text-center bg-slate-50 rounded-[35px] border-2 border-dashed border-slate-200">
+                                                    <p class="text-slate-400 font-bold italic text-sm">Foto dokumentasi akan segera diunggah oleh admin.</p>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -162,12 +198,13 @@
                                         </div>
                                     </div>
                                     <div class="text-right">
+                                        {{-- Donasi selalu positif di daftar ini --}}
                                         <p class="text-sm font-black text-[#147a54]">Rp{{ number_format($d->nominal, 0, ',', '.') }}</p>
                                     </div>
                                 </div>
                             @empty
                                 <div class="col-span-full text-center py-20 bg-slate-50/50 rounded-[40px] border-2 border-dashed border-slate-200">
-                                    <p class="text-slate-400 font-bold italic tracking-widest text-sm">Belum ada donatur terdaftar.<br>Jadilah yang pertama dalam kebaikan ini.</p>
+                                    <p class="text-slate-400 font-bold italic tracking-widest text-sm">Belum ada donatur terdaftar.</p>
                                 </div>
                             @endforelse
                         </div>

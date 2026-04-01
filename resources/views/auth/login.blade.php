@@ -77,6 +77,13 @@
     <div class="blob blob-3"></div>
 </div>
 
+{{-- Tombol Kembali ke Welcome (Floating) --}}
+<div class="fixed top-6 left-6 z-50">
+    <a href="/" class="flex items-center gap-2 px-5 py-2.5 bg-white/80 backdrop-blur-md border border-white/50 rounded-full text-[11px] font-black text-slate-600 hover:text-[#147a54] hover:shadow-lg transition-all group shadow-sm">
+        <svg class="w-4 h-4 group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M10 19l-7-7m0 0l7-7m-7 7h18" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </a>
+</div>
+
 <div class="fixed bottom-0 left-0 w-full z-0 pointer-events-none opacity-[0.08] flex items-end overflow-hidden text-left">
     <svg class="w-full h-auto min-w-[1200px]" viewBox="0 0 1200 300" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M0 300H1200V180C1150 180 1120 150 1100 120C1080 150 1050 180 1000 180V100C1000 80 980 60 960 60H940C920 60 900 80 900 100V180C850 180 820 200 800 230C780 200 750 180 700 180V50C700 22.3858 677.614 0 650 0H550C522.386 0 500 22.3858 500 50V180C450 180 420 200 400 230C380 200 350 180 300 180V100C300 80 280 60 260 60H240C220 60 200 80 200 100V180C150 180 120 150 100 120C80 150 50 180 0 180V300Z" fill="#147a54"/>
@@ -95,7 +102,7 @@
         <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight leading-tight">
             Selamat Datang 
         </h1>
-        <p class="text-gray-500 text-sm mt-2 font-medium italic leading-relaxed uppercase tracking-widest">
+        <p class="text-gray-500 text-[10px] mt-2 font-black italic leading-relaxed uppercase tracking-[0.2em]">
             Sistem Manajemen Arisan Qurban & Kegiatan Sosial
         </p>
     </div>

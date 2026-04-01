@@ -19,8 +19,14 @@ class KegiatanSosial extends Model
         'tanggal_kegiatan', 
         'lokasi', 
         'status_kegiatan', 
+        'dokumentasi',
         'pamflet_kegiatan',
         'target_donasi' 
+    ];
+    
+    protected $casts = [
+        'dokumentasi' => 'array',
+        'tanggal_kegiatan' => 'date'
     ];
 
     public function kategori()

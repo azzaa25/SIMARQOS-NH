@@ -7,18 +7,49 @@ use Illuminate\Http\Request;
 use App\Models\KategoriSosial;
 use App\Models\KegiatanSosial;
 use App\Models\DanaSosial;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
 class KegiatanSosialController extends Controller
 {
+
+    /*
+    =============================
+    AUTO UPDATE STATUS KEGIATAN
+    =============================
+    */
+    private function updateStatusKegiatan()
+    {
+        // kegiatan yang sudah lewat → selesai
+        KegiatanSosial::where('tanggal_kegiatan','<',now())
+            ->where('status_kegiatan','!=','selesai')
+            ->update([
+                'status_kegiatan' => 'selesai'
+            ]);
+
+        // kegiatan hari ini → berlangsung
+        KegiatanSosial::whereDate('tanggal_kegiatan', now())
+            ->update([
+                'status_kegiatan' => 'berlangsung'
+            ]);
+
+        // kegiatan yang akan datang → rencana
+        KegiatanSosial::where('tanggal_kegiatan','>',now())
+            ->update([
+                'status_kegiatan' => 'rencana'
+            ]);
+    }
+
+
     public function index(Request $request)
     {
+        // UPDATE STATUS OTOMATIS
+        $this->updateStatusKegiatan();
+
         $kategori = KategoriSosial::all();
         
-        // 1. TAMBAHKAN INI: Ambil total semua kegiatan tanpa filter untuk Info Card
         $totalKegiatanSemua = KegiatanSosial::count();
 
-        // 2. Query untuk tabel (Bisa difilter)
         $query = KegiatanSosial::with('kategori');
 
         if ($request->has('kategori') && $request->kategori != '') {
@@ -27,7 +58,6 @@ class KegiatanSosialController extends Controller
 
         $kegiatan = $query->orderBy('tanggal_kegiatan', 'desc')->get();
         
-        // Statistik Keuangan (Tetap Global)
         $totalMasuk = DanaSosial::where('tipe_dana', 'masuk')
                         ->where('status_pembayaran', 'success')
                         ->sum('nominal');
@@ -37,7 +67,6 @@ class KegiatanSosialController extends Controller
 
         $saldoSosial = $totalMasuk - $totalKeluar;
 
-        // 3. Masukkan 'totalKegiatanSemua' ke dalam compact
         return view('admin.sosial.index', compact(
             'kategori',
             'kegiatan',
@@ -134,13 +163,57 @@ class KegiatanSosialController extends Controller
 
         return redirect()->back()->with('success','Agenda berhasil diupdate');
     }
+
     public function destroy($id)
     {
         $kegiatan = KegiatanSosial::findOrFail($id);
 
+        // 1. Hapus file Pamflet dari storage
+        if ($kegiatan->pamflet_kegiatan) {
+            Storage::disk('public')->delete($kegiatan->pamflet_kegiatan);
+        }
+
+        // 2. Hapus semua file Dokumentasi dari storage
+        if ($kegiatan->dokumentasi && is_array($kegiatan->dokumentasi)) {
+            foreach ($kegiatan->dokumentasi as $foto) {
+                Storage::disk('public')->delete($foto);
+            }
+        }
+
+        // 3. Hapus data dari database
         $kegiatan->delete();
 
-        return redirect()->back()->with('success','Agenda berhasil dihapus');
+        return redirect()->back()->with('success', 'Agenda dan seluruh berkas berhasil dihapus');
+    }
+
+    /*
+    =============================
+    UPLOAD DOKUMENTASI (NEW)
+    =============================
+    */
+    public function uploadDokumentasi(Request $request, $id)
+    {
+        $request->validate([
+            'dokumentasi.*' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+        ]);
+
+        $kegiatan = KegiatanSosial::findOrFail($id);
+        
+        // Pastikan $images selalu array, ambil dari DB atau buat array kosong
+        $images = is_array($kegiatan->dokumentasi) ? $kegiatan->dokumentasi : []; 
+
+        if ($request->hasFile('dokumentasi')) {
+            foreach ($request->file('dokumentasi') as $file) {
+                $path = $file->store('dokumentasi_kegiatan', 'public');
+                $images[] = $path;
+            }
+        }
+
+        $kegiatan->update([
+            'dokumentasi' => $images
+        ]);
+
+        return redirect()->back()->with('success', 'Foto dokumentasi berhasil ditambahkan!');
     }
 
     /*
@@ -190,8 +263,10 @@ class KegiatanSosialController extends Controller
 
         DanaSosial::create([
             'id_kegiatan' => $id,
+            'nama_donatur' => 'Admin',
             'tipe_dana' => 'keluar',
             'nominal' => $request->nominal,
+            'metode_pembayaran' => 'manual_transfer',
             'status_pembayaran' => 'success',
             'keterangan_transaksi' => $request->keterangan
         ]);
@@ -199,17 +274,20 @@ class KegiatanSosialController extends Controller
         return redirect()->back()
             ->with('success', 'Pencairan dana berhasil dicatat!');
     }
+
+
     public function listPublik(Request $request)
     {
-        // Ambil semua kategori untuk filter di sidebar/atas
+        // UPDATE STATUS OTOMATIS
+        $this->updateStatusKegiatan();
+
         $categories = KategoriSosial::all();
 
-        // Ambil kegiatan yang sedang aktif (bisa difilter berdasarkan kategori jika ada request)
         $query = KegiatanSosial::with('kategori');
 
         if ($request->has('kategori')) {
             $query->whereHas('kategori', function($q) use ($request) {
-                $q->where('slug', $request->kategori); // pastikan tabel kategori punya kolom slug
+                $q->where('slug', $request->kategori);
             });
         }
 
@@ -217,4 +295,77 @@ class KegiatanSosialController extends Controller
 
         return view('sosial.publik', compact('kegiatan', 'categories'));
     }
+
+
+    /*
+    =============================
+    LAPORAN KEGIATAN SOSIAL
+    =============================
+    */
+    public function laporan()
+    {
+        $laporanKategori = KategoriSosial::withCount('kegiatan')
+            ->get();
+
+        $kegiatanSelesai = KegiatanSosial::with('kategori')
+            ->where('tanggal_kegiatan', '<', now())
+            ->orderBy('tanggal_kegiatan', 'desc')
+            ->get();
+
+        $totalDanaMasuk = DanaSosial::where('tipe_dana', 'masuk')
+            ->where('status_pembayaran', 'success')
+            ->sum('nominal');
+
+        $totalDanaKeluar = DanaSosial::where('tipe_dana', 'keluar')
+            ->sum('nominal');
+
+        return view('admin.sosial.laporan', compact(
+            'laporanKategori',
+            'kegiatanSelesai',
+            'totalDanaMasuk',
+            'totalDanaKeluar'
+        ));
+    }
+
+
+    /*
+    =============================
+    EXPORT PDF LAPORAN SPESIFIK
+    =============================
+    */
+    public function exportPdf($id)
+    {
+        // 1. Ambil data kegiatan tunggal berdasarkan ID
+        $kegiatan = KegiatanSosial::with('kategori')->findOrFail($id);
+
+        // 2. Ambil rincian mutasi dana khusus untuk kegiatan ini saja
+        $rincianDana = DanaSosial::where('id_kegiatan', $id)
+                        ->orderBy('tanggal_input', 'desc')
+                        ->get();
+
+        // 3. Hitung total masuk & keluar khusus kegiatan ini
+        // Menggunakan accessor yang sudah ada di Model KegiatanSosial
+        $totalDanaMasuk = $kegiatan->total_masuk; 
+        $totalDanaKeluar = $kegiatan->total_keluar;
+
+        // 4. Generate PDF menggunakan view tunggal
+        // Catatan: Pastikan nama view sesuai, di sini saya gunakan 'admin.sosial.laporan_pdf'
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView(
+            'admin.sosial.laporan_pdf',
+            compact(
+                'kegiatan',
+                'rincianDana',
+                'totalDanaMasuk',
+                'totalDanaKeluar'
+            )
+        );
+
+        $pdf->setPaper('a4', 'portrait');
+
+        // Penamaan file otomatis berdasarkan nama kegiatan
+        $fileName = 'Laporan-' . \Str::slug($kegiatan->nama_kegiatan) . '-' . date('Y-m-d') . '.pdf';
+
+        return $pdf->download($fileName);
+    }
+
 }

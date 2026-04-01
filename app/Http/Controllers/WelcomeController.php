@@ -10,9 +10,24 @@ use App\Models\KategoriSosial; // 1. Pastikan Model KategoriSosial di-import
 class WelcomeController extends Controller
 {
     public function index() {
-        $kegiatan = KegiatanSosial::with('kategori')->latest()->take(3)->get();
-        $totalDonasi = DanaSosial::whereIn('status_pembayaran', ['success', 'settlement'])->sum('nominal');
-        return view('welcome', compact('kegiatan', 'totalDonasi'));
+        // Menghitung total peserta arisan yang status USER-nya aktif
+        $totalPeserta = \App\Models\PesertaArisan::count();
+        // Ambil kegiatan yang belum selesai untuk ditampilkan di hero/slider (opsional)
+        $kegiatan = KegiatanSosial::with('kategori')
+                    ->where('status_kegiatan', '!=', 'selesai')
+                    ->latest()
+                    ->take(3)
+                    ->get();
+
+        // PERBAIKAN: Total dana terkumpul hanya dari agenda yang MASIH BERLANGSUNG
+        $totalDonasi = DanaSosial::whereHas('kegiatan', function($query) {
+                            $query->where('status_kegiatan', '!=', 'selesai');
+                        })
+                        ->where('tipe_dana', 'masuk') // Hanya uang masuk (donasi)
+                        ->whereIn('status_pembayaran', ['success', 'settlement'])
+                        ->sum('nominal');
+
+        return view('welcome', compact('kegiatan', 'totalDonasi', 'totalPeserta'));
     }
 
     // Halaman Semua Agenda
@@ -32,6 +47,12 @@ class WelcomeController extends Controller
     public function detailAgenda($id) {
         $item = KegiatanSosial::with('kategori')->findOrFail($id);
         
+        // Logika tambahan: Jika sudah lewat tanggalnya, pastikan status di objek tersebut adalah 'selesai'
+        // (Walaupun sudah ada auto-update di index admin, ini untuk keamanan tampilan publik)
+        if ($item->tanggal_kegiatan < now()->startOfDay() && $item->status_kegiatan != 'selesai') {
+            $item->status_kegiatan = 'selesai';
+        }
+
         $donatur = DanaSosial::where('id_kegiatan', $id)
                     ->whereIn('status_pembayaran', ['success', 'settlement'])
                     ->orderBy('tanggal_input', 'desc')

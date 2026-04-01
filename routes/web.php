@@ -93,6 +93,9 @@ Route::middleware(['auth', 'role:admin'])
             Route::delete('/delete/{id}', [KegiatanSosialController::class, 'destroy'])->name('destroy');
             Route::post('/dana-masuk', [KegiatanSosialController::class, 'storeDanaMasuk'])->name('dana_masuk');
             Route::post('/cairkan/{id}', [KegiatanSosialController::class, 'cairkanDana'])->name('cairkan');
+            Route::get('/laporan', [KegiatanSosialController::class, 'laporan'])->name('laporan');
+            Route::get('/laporan/pdf/{id}', [KegiatanSosialController::class, 'exportPdf'])->name('laporan.pdf');
+            Route::post('/upload-dokumentasi/{id}', [KegiatanSosialController::class, 'uploadDokumentasi'])->name('upload_dokumentasi');
         });
     });
 
