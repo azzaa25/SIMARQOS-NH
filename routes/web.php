@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UserApprovalController;
 use App\Http\Controllers\Admin\AdminManageController;
 use App\Http\Controllers\Admin\UndianArisanController;
 use App\Http\Controllers\Admin\TransaksiAdminController;
+use App\Http\Controllers\Admin\PengeluaranArisanController;
 use App\Http\Controllers\Admin\KegiatanSosialController;
 // Peserta Controllers
 use App\Http\Controllers\Peserta\DashboardPesertaController;
@@ -23,7 +24,7 @@ use App\Http\Controllers\Peserta\ProfilePesertaController;
 use App\Http\Controllers\Peserta\TransaksiPesertaController;
 use App\Http\Controllers\Peserta\JadwalController;
 use App\Http\Controllers\Peserta\LaporanPesertaController;
-
+use App\Http\Controllers\Peserta\KegiatanSosialPesertaController;
 /*
 |--------------------------------------------------------------------------
 | Public
@@ -97,6 +98,12 @@ Route::middleware(['auth', 'role:admin'])
             Route::get('/laporan/pdf/{id}', [KegiatanSosialController::class, 'exportPdf'])->name('laporan.pdf');
             Route::post('/upload-dokumentasi/{id}', [KegiatanSosialController::class, 'uploadDokumentasi'])->name('upload_dokumentasi');
         });
+        // PENGELUARAN ARISAN ROUTES
+        Route::prefix('pengeluaran')->as('pengeluaran.')->group(function () {
+            Route::get('/', [PengeluaranArisanController::class, 'index'])->name('index');
+            Route::delete('/{id}', [PengeluaranArisanController::class, 'destroy'])->name('destroy');
+            Route::get('/export/pdf', [PengeluaranArisanController::class, 'exportPDF'])->name('pdf');
+        });
     });
 
 /*
@@ -133,4 +140,7 @@ Route::middleware(['auth', 'role:peserta'])
         Route::get('/jadwal', [JadwalController::class, 'index'])->name('jadwal.index');
         // Laporan Pembayaran Routes
         Route::get('/laporan', [LaporanPesertaController::class, 'index'])->name('laporan.index');
+        // Kegiatan Sosial Routes
+        Route::get('/sosial', [KegiatanSosialPesertaController::class, 'index'])->name('sosial.index');
+        Route::get('/sosial/{id}', [KegiatanSosialPesertaController::class, 'detail'])->name('sosial.detail');
     });

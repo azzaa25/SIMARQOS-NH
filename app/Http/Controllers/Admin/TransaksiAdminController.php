@@ -18,38 +18,52 @@ class TransaksiAdminController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Ambil input filter
-        $bulanFilter = $request->get('bulan', date('n'));
-        $tahunFilter = $request->get('tahun', date('Y'));
+        // 1. Ambil input filter dari dropdown
+        $bulanFilter = $request->get('bulan');
+        $tahunFilter = $request->get('tahun');
 
-        // 2. Query transaksi yang DIFILTER (untuk tabel dan saldo tunai/transfer)
-        $query = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
-            ->whereMonth('created_at', $bulanFilter)
-            ->whereYear('created_at', $tahunFilter);
+        $query = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok']);
+
+        // 2. LOGIKA FILTER: Mencocokkan dengan kolom 'bulan_iuran' (Bahasa Inggris)
+        if ($bulanFilter && $tahunFilter) {
+            // Pastikan $bulanFilter adalah integer
+            $bulanAngka = (int)$bulanFilter; 
+            
+            // Paksa locale 'en' agar format 'F' menghasilkan "January", "February", dst.
+            $namaBulanInggris = Carbon::createFromDate($tahunFilter, $bulanAngka, 1)
+                                ->locale('en')
+                                ->format('F');
+                                
+            $stringCari = $namaBulanInggris . ' ' . $tahunFilter; // Hasil: "January 2026"
+
+            $query->where('bulan_iuran', $stringCari);
+        }
 
         $transaksi = $query->latest()->get();
 
-        // 3. SALDO TOTAL (Keseluruhan Tanpa Filter Bulan/Tahun)
-        // Ini akan menampilkan total uang masuk dari awal sampai kapanpun
+        // --- Statistik tetap Global agar saldo ID 8-52 tetap terhitung ---
         $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
+        
+        $totalTunai = TransaksiPembayaran::where('status_pembayaran', 'sukses')
+            ->where('metode_pembayaran', 'Tunai')
+            ->sum('nominal');
 
-        // 4. Statistik pendukung lainnya (Tetap mengikuti filter agar relevan dengan tabel)
-        $rataRata = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->whereMonth('created_at', $bulanFilter)
-            ->whereYear('created_at', $tahunFilter)
-            ->avg('nominal') ?? 0;
+        $totalTransfer = TransaksiPembayaran::where('status_pembayaran', 'sukses')
+            ->where('metode_pembayaran', '!=', 'Tunai')
+            ->sum('nominal');
+
+        $rataRata = $transaksi->where('status_pembayaran', 'sukses')->avg('nominal') ?? 0;
 
         $tunggakan = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
             ->where('status_pembayaran', 'pending')
             ->orderBy('created_at', 'asc')
             ->get();
 
+        // Data lainnya...
         $totalPeserta = PesertaArisan::whereHas('user', function ($q) {
             $q->whereIn('status', ['aktif', 'nonaktif']);
         })->count();
 
-        $totalSkema = SkemaArisan::count();
-        
         $metodeFavorit = TransaksiPembayaran::where('status_pembayaran', 'sukses')
             ->select('metode_pembayaran', DB::raw('count(*) as total'))
             ->groupBy('metode_pembayaran')
@@ -64,8 +78,8 @@ class TransaksiAdminController extends Controller
             ->pluck('total');
 
         return view('admin.transaksi.index', compact(
-            'transaksi', 'tunggakan', 'totalPeserta', 'totalSkema', 'totalKas', 
-            'rataRata', 'metodeFavorit', 'grafikBulanan'
+            'transaksi', 'tunggakan', 'totalPeserta', 'totalKas', 
+            'totalTunai', 'totalTransfer', 'rataRata', 'metodeFavorit', 'grafikBulanan'
         ));
     }
     public function callback(Request $request)
@@ -222,10 +236,38 @@ class TransaksiAdminController extends Controller
         return back()->with('success', 'Pembayaran berhasil diverifikasi secara manual.');
     }
 
-    public function exportPDF()
+    public function exportPDF(Request $request)
     {
-        $data = TransaksiPembayaran::with('peserta')->where('status_pembayaran', 'sukses')->get();
-        $pdf = Pdf::loadView('admin.transaksi.pdf', compact('data'));
-        return $pdf->download('laporan-keuangan-arisan.pdf');
+        $bulanFilter = $request->get('bulan');
+        $tahunFilter = $request->get('tahun');
+
+        $query = TransaksiPembayaran::with(['peserta.kelompok'])
+                    ->where('status_pembayaran', 'sukses');
+
+        // Judul dinamis untuk di laporan
+        $periodeTeks = "Semua Periode";
+
+        if ($bulanFilter && $tahunFilter) {
+            $namaBulanInggris = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)->locale('en')->format('F');
+            $stringCari = $namaBulanInggris . ' ' . $tahunFilter;
+            $query->where('bulan_iuran', $stringCari);
+            
+            // Buat teks untuk judul PDF dalam bahasa Indonesia
+            $namaBulanIndo = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)->translatedFormat('F');
+            $periodeTeks = $namaBulanIndo . ' ' . $tahunFilter;
+        }
+
+        $allData = $query->latest()->get();
+
+        // Pisahkan data untuk mempermudah di view PDF
+        $dataKelompok = $allData->whereNotNull('peserta.id_kelompok')->groupBy('peserta.id_kelompok');
+        $dataIndividu = $allData->whereNull('peserta.id_kelompok');
+
+        $pdf = Pdf::loadView('admin.transaksi.pdf', compact('dataKelompok', 'dataIndividu', 'periodeTeks'));
+        
+        // Nama file jadi dinamis: laporan-januari-2026.pdf
+        $fileName = 'laporan-arisan-' . strtolower(str_replace(' ', '-', $periodeTeks)) . '.pdf';
+        
+        return $pdf->download($fileName);
     }
 }

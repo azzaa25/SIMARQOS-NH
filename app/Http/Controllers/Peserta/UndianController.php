@@ -13,7 +13,7 @@ class UndianController extends Controller
         // Peserta hanya bisa MELIHAT daftar pemenang yang sudah diundi oleh admin
         // Kita urutkan dari tahun terbaru (desc) agar yang paling atas adalah pemenang terakhir
         $undians = UndianArisan::with(['peserta.kelompok', 'skema'])
-                    ->orderBy('tahun_ke', 'desc')
+                    ->orderBy('tahun_pelaksanaan', 'desc')
                     ->orderBy('urutan_pemenang', 'asc')
                     ->get();
 

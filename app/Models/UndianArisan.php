@@ -14,7 +14,7 @@ class UndianArisan extends Model
     protected $fillable = [
         'id_skema',
         'id_pesertaarisan',
-        'tahun_ke',
+        'tahun_pelaksanaan',
         'urutan_pemenang',
         'tanggal_undian',
         'status_undian'

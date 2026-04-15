@@ -6,6 +6,12 @@
     <title>{{ $title ?? 'Peserta' }} - Arisan Qurban Masjid Nurul Huda</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <script type="text/javascript"
+        src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="{{ config('services.midtrans.clientKey') }}">
+    </script>
+    
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .custom-scrollbar::-webkit-scrollbar { width: 4px; }

@@ -8,7 +8,7 @@
     {{-- ================= HEADER ================= --}}
     <div class="mb-8 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-            <h1 class="text-3xl font-black text-slate-900 tracking-tight leading-tight">Manajemen Kelompok</h1>
+            <h1 class="text-2xl font-extrabold text-green-900 tracking-tight">Manajemen Kelompok</h1>
             <p class="text-sm text-gray-400 font-medium italic">
                 Kode Kelompok: 
                 <span class="text-[#147a54] font-bold">{{ $kelompok->kode_kelompok ?? 'Belum Terbentuk' }}</span>

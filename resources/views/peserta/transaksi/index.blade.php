@@ -3,7 +3,7 @@
 @section('content')
 <div class="max-w-4xl mx-auto py-10 px-4">
     <div class="mb-8">
-        <h1 class="text-2xl font-black text-green-900 uppercase tracking-tight">Riwayat Iuran Arisan</h1>
+        <h1 class="text-2xl font-extrabold text-green-900 tracking-tight">Riwayat Iuran Arisan</h1>
         <p class="text-sm text-gray-400 italic">Pantau dan bayar iuran bulanan Anda di sini.</p>
     </div>
 

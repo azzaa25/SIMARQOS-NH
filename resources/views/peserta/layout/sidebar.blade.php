@@ -67,7 +67,7 @@
 
         <div class="mb-6">
             <p class="text-[10px] font-bold text-green-500/50 uppercase px-4 mb-2 tracking-widest">Masjid</p>
-            <a href="#" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+            <a href="{{ route('peserta.sosial.index') }}" class="group flex items-center gap-3 px-4 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
                 <span class="text-sm">Kegiatan Sosial</span>
             </a>

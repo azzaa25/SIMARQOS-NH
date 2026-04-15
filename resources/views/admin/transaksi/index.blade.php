@@ -6,8 +6,8 @@
     {{-- Header Section --}}
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-            <h1 class="text-2xl font-black text-slate-800 tracking-tight uppercase mb-1">Transaksi Pembayaran</h1>
-            <p class="text-sm text-gray-400 font-medium italic uppercase tracking-wider">Riwayat iuran</p>
+            <h1 class="text-2xl font-bold text-green-900 leading-tight">Transaksi Pembayaran</h1>
+            <p class="text-sm text-gray-400 font-medium italic tracking-wider">Riwayat iuran</p>
         </div>
         
         <div class="flex flex-wrap items-center gap-3">
@@ -20,10 +20,10 @@
 
             <button type="button" onclick="confirmGenerate()" class="bg-slate-800 hover:bg-black text-white px-5 py-3 rounded-2xl font-black text-[9px] uppercase tracking-widest shadow-lg transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 6v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                Tagih Manual
+                Tagih
             </button>
 
-            <a href="{{ route('admin.transaksi.export') }}" class="bg-green-800 hover:bg-green-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-900/20 transition-all flex items-center gap-2">
+            <a href="{{ route('admin.transaksi.export', ['bulan' => request('bulan'), 'tahun' => request('tahun')]) }}" class="bg-green-800 hover:bg-green-900 text-white px-6 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg shadow-green-900/20 transition-all flex items-center gap-2">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 Ekspor PDF
             </a>
@@ -63,40 +63,32 @@
             
             {{-- Statistik Cards --}}
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {{-- Total Saldo --}}
                 <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Total Saldo</p>
+                    <p class="text-[9px] font-black text-gray-400 uppercase mb-1">Total Saldo Masuk</p>
                     <h3 class="text-lg font-black text-slate-800 leading-tight">Rp {{ number_format($totalKas, 0, ',', '.') }}</h3>
                 </div>
 
-                {{-- Perbaikan Filter Saldo Tunai --}}
+                {{-- Saldo Tunai (Sudah dihitung di Controller) --}}
                 <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
                     <p class="text-[9px] font-black text-blue-500 uppercase mb-1">Saldo Tunai</p>
                     <h3 class="text-lg font-black text-slate-800 leading-tight">
-                        @php
-                            $saldoTunai = $transaksi->where('status_pembayaran', 'sukses')->filter(function($item) {
-                                return stripos($item->metode_pembayaran, 'tunai') !== false;
-                            })->sum('nominal');
-                        @endphp
-                        Rp {{ number_format($saldoTunai, 0, ',', '.') }}
+                        Rp {{ number_format($totalTunai, 0, ',', '.') }}
                     </h3>
                 </div>
 
-                {{-- Perbaikan Filter Saldo Transfer --}}
+                {{-- Saldo Transfer (Sudah dihitung di Controller) --}}
                 <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
                     <p class="text-[9px] font-black text-purple-500 uppercase mb-1">Saldo Transfer</p>
                     <h3 class="text-lg font-black text-slate-800 leading-tight">
-                        @php
-                            $saldoTransfer = $transaksi->where('status_pembayaran', 'sukses')->filter(function($item) {
-                                return stripos($item->metode_pembayaran, 'tunai') === false;
-                            })->sum('nominal');
-                        @endphp
-                        Rp {{ number_format($saldoTransfer, 0, ',', '.') }}
+                        Rp {{ number_format($totalTransfer, 0, ',', '.') }}
                     </h3>
                 </div>
 
+                {{-- Tagihan Pending --}}
                 <div class="bg-white p-5 rounded-[32px] border border-orange-100 bg-orange-50/30 shadow-sm">
                     <p class="text-[9px] font-black text-orange-400 uppercase mb-1">Tagihan Pending</p>
-                    <h3 class="text-lg font-black text-slate-800 leading-tight">{{ $transaksi->where('status_pembayaran', 'pending')->count() }} Peserta</h3>
+                    <h3 class="text-lg font-black text-slate-800 leading-tight">{{ $tunggakan->count() }} Transaksi</h3>
                 </div>
             </div>
 
