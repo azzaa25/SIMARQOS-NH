@@ -8,6 +8,7 @@ use App\Models\PesertaArisan;
 use App\Models\SkemaArisan;
 use Illuminate\Http\Request; 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 
@@ -169,7 +170,6 @@ class TransaksiAdminController extends Controller
      */
     public function generateTagihan(Request $request = null)
     {
-        // Gunakan try-catch agar jika error, kita tahu penyebabnya
         try {
             $pesertas = PesertaArisan::whereHas('user', function($q) {
                 $q->where('status', 'aktif');
@@ -177,12 +177,10 @@ class TransaksiAdminController extends Controller
 
             $bulanIni = Carbon::now()->translatedFormat('F Y');
             $count = 0;
+            $daftarNama = []; // Untuk menampung nama yang dibuatkan tagihan
 
             foreach ($pesertas as $p) {
-                // Pastikan peserta punya skema arisan sebelum dibuat tagihannya
-                if (!$p->skemaArisan) {
-                    continue; // Lewati jika data skema tidak ada
-                }
+                if (!$p->skemaArisan) continue;
 
                 $exists = TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)
                             ->where('bulan_iuran', $bulanIni)
@@ -190,7 +188,6 @@ class TransaksiAdminController extends Controller
 
                 if (!$exists) {
                     $nominalSkema = $p->skemaArisan->nominal_iuran;
-                    // Pastikan pembagian kelompok aman (tidak bagi nol)
                     $nominalFinal = ($p->id_kelompok != null) ? ceil($nominalSkema / 7) : $nominalSkema;
 
                     TransaksiPembayaran::create([
@@ -200,21 +197,55 @@ class TransaksiAdminController extends Controller
                         'bulan_iuran' => $bulanIni,
                         'status_pembayaran' => 'pending'
                     ]);
+                    
+                    // Masukkan nama ke daftar untuk notifikasi
+                    $daftarNama[] = $p->nama; 
                     $count++;
                 }
             }
 
+            // --- LOGIKA KIRIM WHATSAPP ---
+            if ($count > 0) {
+                $pesanWA = "🔔 *PEMBERITAHUAN TAGIHAN ARISAN*\n";
+                $pesanWA .= "Periode: *" . $bulanIni . "*\n\n";
+                $pesanWA .= "Assalamu'alaikum Wr. Wb.\nMohon perhatian Bapak/Ibu, tagihan arisan bulan ini telah diterbitkan untuk:\n\n";
+                
+                // Batasi tampilan nama jika terlalu banyak agar chat tidak kepanjangan
+                $limit = 10;
+                foreach (array_slice($daftarNama, 0, $limit) as $index => $nama) {
+                    $pesanWA .= ($index + 1) . ". " . $nama . "\n";
+                }
+
+                if (count($daftarNama) > $limit) {
+                    $pesanWA .= "...dan " . (count($daftarNama) - $limit) . " peserta lainnya.\n";
+                }
+
+                $pesanWA .= "\nSilakan melakukan pembayaran melalui aplikasi atau setor tunai ke pengurus.\n";
+                $pesanWA .= "Terima kasih atas partisipasinya. 🙏";
+
+                // Kirim ke Bot Node.js
+                try {
+                    Http::post(env('WA_BOT_URL'), [
+                        'groupId' => env('WA_GROUP_ID'),
+                        'message' => $pesanWA
+                    ]);
+                } catch (\Exception $waEx) {
+                    // Jangan hentikan proses jika WA gagal, cukup log saja
+                    \Log::error("Gagal kirim WA Tagihan: " . $waEx->getMessage());
+                }
+            }
+            // --- END LOGIKA WA ---
+
             if (request()->wantsJson()) {
                 return response()->json([
                     'status' => 'success',
-                    'message' => "Berhasil menerbitkan $count tagihan baru."
+                    'message' => "Berhasil menerbitkan $count tagihan baru dan mengirim notifikasi."
                 ]);
             }
 
-            return back()->with('success', "Tagihan berhasil dibuat.");
+            return back()->with('success', "Tagihan berhasil dibuat dan notifikasi dikirim.");
 
         } catch (\Exception $e) {
-            // Jika error, kirim pesan error yang sebenarnya ke tampilan
             if (request()->wantsJson()) {
                 return response()->json([
                     'status' => 'error',
@@ -269,5 +300,62 @@ class TransaksiAdminController extends Controller
         $fileName = 'laporan-arisan-' . strtolower(str_replace(' ', '-', $periodeTeks)) . '.pdf';
         
         return $pdf->download($fileName);
+    }
+    public function kirimTagihanWa()
+    {
+        try {
+            $tunggakan = TransaksiPembayaran::with('peserta')
+                ->where('status_pembayaran', 'pending')
+                ->get()
+                ->groupBy('bulan_iuran');
+
+            if ($tunggakan->count() == 0) {
+                return back()->with('error', 'Tidak ada tunggakan.');
+            }
+
+            $bulanSekarangIndo = Carbon::now()->translatedFormat('F Y');
+            
+            $pesanWA = "⚠️ *PENGINGAT IURAN ARISAN*\n";
+            $pesanWA .= "--------------------------------\n\n";
+
+            foreach ($tunggakan as $bulanInggris => $daftarTrx) {
+                // --- PROSES TERJEMAH BULAN ---
+                $bulanIndo = str_replace(
+                    ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                    ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                    $bulanInggris
+                );
+
+                // Cek apakah periode ini adalah bulan berjalan (pakai nama bulan yang sudah Indo)
+                $label = ($bulanIndo !== $bulanSekarangIndo) ? "*PERIODE $bulanIndo (TUNGGAKAN LAMA)*" : "PERIODE $bulanIndo (TAGIHAN BARU)";
+                
+                $pesanWA .= "$label:\n";
+
+                foreach ($daftarTrx as $index => $item) {
+                    $nama = $item->peserta->nama;
+                    $nominal = number_format($item->nominal, 0, ',', '.');
+                    
+                    if ($bulanIndo !== $bulanSekarangIndo) {
+                        $pesanWA .= ($index + 1) . ". *" . $nama . "* (Rp " . $nominal . ")\n";
+                    } else {
+                        $pesanWA .= ($index + 1) . ". " . $nama . " (Rp " . $nominal . ")\n";
+                    }
+                }
+                $pesanWA .= "\n"; 
+            }
+
+            $pesanWA .= "--------------------------------\n";
+            $pesanWA .= "Segera bayar via aplikasi atau tunai. Terima kasih. 🙏";
+
+            Http::post(env('WA_BOT_URL'), [
+                'groupId' => env('WA_GROUP_ID'),
+                'message' => $pesanWA
+            ]);
+
+            return back()->with('success', 'Notifikasi berhasil dikirim!');
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal: ' . $e->getMessage());
+        }
     }
 }

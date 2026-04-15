@@ -12,6 +12,7 @@ use App\Models\PengeluaranArisan;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class UndianArisanController extends Controller
 {
@@ -61,9 +62,10 @@ class UndianArisanController extends Controller
         DB::beginTransaction();
         try {
             $pemenangList = collect();
+            $namaKelompok = null;
 
             // ============================================================
-            // 1. SKEMA 1 TAHUN (WAJIB LUNAS)
+            // 1. JALUR 1 TAHUN (POKOKNYA LUNAS = MENANG SEMUA)
             // ============================================================
             if ($skema->durasi_bulan <= 12) {
                 $peserta = PesertaArisan::where('id_skema', $skema->id_skema)
@@ -71,79 +73,75 @@ class UndianArisanController extends Controller
                     ->get();
 
                 $pemenangList = $peserta->filter(function ($p) use ($nominalTargetPerOrang) {
+                    $pernahMenang = UndianArisan::where('id_pesertaarisan', $p->id_pesertaarisan)->exists();
                     $totalBayar = TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)
-                        ->where('status_pembayaran', 'sukses')
-                        ->sum('nominal');
-                    return $totalBayar >= $nominalTargetPerOrang;
+                        ->where('status_pembayaran', 'sukses')->sum('nominal');
+                    
+                    return !$pernahMenang && $totalBayar >= $nominalTargetPerOrang;
                 });
 
                 if ($pemenangList->isEmpty()) {
-                    $listBelumLunas = $peserta->map(function($p) use ($nominalTargetPerOrang) {
-                        $total = TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)
-                                ->where('status_pembayaran', 'sukses')->sum('nominal');
-                        return $p->nama . " (Rp " . number_format($total) . ")";
-                    })->take(3);
-
-                    return back()->with('error_pembayaran', [
-                        'title' => 'Gagal Mengundi!',
-                        'message' => 'Tidak ada peserta yang lunas untuk skema ini.',
-                        'detail' => $listBelumLunas->implode(', ')
-                    ]);
+                    return back()->with('error', 'Tidak ada peserta lunas yang tersedia.');
                 }
                 $pesanSukses = "Berhasil merealisasikan " . $pemenangList->count() . " peserta.";
             } 
             // ============================================================
-            // 2. SKEMA 3 TAHUN (KELOMPOK)
+            // 2. JALUR 3 TAHUN (LOGIKA KELOMPOK / PERORANGAN ACAK)
             // ============================================================
             else {
-                $totalPesertaSkema = PesertaArisan::where('id_skema', $skema->id_skema)->count();
+                $totalPeserta = PesertaArisan::where('id_skema', $skema->id_skema)->count();
                 $durasiTahun = $skema->durasi_bulan / 12;
-                $jatahPerTahun = ceil($totalPesertaSkema / $durasiTahun);
+                $jatahPerTahun = ceil($totalPeserta / $durasiTahun);
 
                 $sudahMenangTahunIni = UndianArisan::where('id_skema', $skema->id_skema)
                     ->where('tahun_pelaksanaan', $tahunRiil)
                     ->count();
 
                 if ($sudahMenangTahunIni >= $jatahPerTahun) {
-                    return back()->with('error', "Kuota pemenang tahun $tahunRiil untuk skema ini sudah terpenuhi.");
+                    return back()->with('error', "Kuota pemenang tahun $tahunRiil sudah terpenuhi.");
                 }
 
-                $kelompokPernahMenang = UndianArisan::where('undian_arisan.id_skema', $skema->id_skema)
-                    ->join('peserta_arisan', 'undian_arisan.id_pesertaarisan', '=', 'peserta_arisan.id_pesertaarisan')
-                    ->whereNotNull('peserta_arisan.id_kelompok')
-                    ->pluck('peserta_arisan.id_kelompok')
-                    ->unique();
+                // Cek apakah ada kelompok di skema ini
+                $adaKelompok = PesertaArisan::where('id_skema', $skema->id_skema)->whereNotNull('id_kelompok')->exists();
 
-                $kelompokTerpilih = KelompokArisan::whereHas('anggota', function ($q) use ($skema) {
-                        $q->where('id_skema', $skema->id_skema);
-                    })
-                    ->whereNotIn('id_kelompok', $kelompokPernahMenang)
-                    ->inRandomOrder()
-                    ->first();
+                if ($adaKelompok) {
+                    // --- LOGIKA KELOMPOK ---
+                    $kelompokPernahMenang = UndianArisan::where('undian_arisan.id_skema', $skema->id_skema)
+                        ->join('peserta_arisan', 'undian_arisan.id_pesertaarisan', '=', 'peserta_arisan.id_pesertaarisan')
+                        ->whereNotNull('peserta_arisan.id_kelompok')
+                        ->pluck('peserta_arisan.id_kelompok')->unique();
 
-                if (!$kelompokTerpilih) {
-                    return back()->with('error', 'Semua kelompok dalam skema ini sudah pernah memenangkan undian.');
+                    $kelompokTerpilih = KelompokArisan::whereHas('anggota', fn($q) => $q->where('id_skema', $skema->id_skema))
+                        ->whereNotIn('id_kelompok', $kelompokPernahMenang)
+                        ->inRandomOrder()->first();
+
+                    if (!$kelompokTerpilih) return back()->with('error', 'Semua kelompok sudah menang.');
+
+                    $pemenangList = PesertaArisan::where('id_kelompok', $kelompokTerpilih->id_kelompok)
+                        ->where('id_skema', $skema->id_skema)->get();
+                    $namaKelompok = $kelompokTerpilih->nama_kelompok;
+                    $pesanSukses = "Kelompok $namaKelompok terpilih sebagai pemenang!";
+                } else {
+                    // --- LOGIKA PERORANGAN (3 TAHUN) ---
+                    $sisaKuota = $jatahPerTahun - $sudahMenangTahunIni;
+                    $pemenangList = PesertaArisan::where('id_skema', $skema->id_skema)
+                        ->whereDoesntHave('undian') 
+                        ->inRandomOrder()->take($sisaKuota)->get();
+
+                    if ($pemenangList->isEmpty()) return back()->with('error', 'Semua peserta sudah menang.');
+                    $pesanSukses = $pemenangList->count() . " Pemenang perorangan berhasil diundi.";
                 }
-
-                $pemenangList = PesertaArisan::where('id_kelompok', $kelompokTerpilih->id_kelompok)
-                    ->where('id_skema', $skema->id_skema)
-                    ->get();
-
-                $pesanSukses = "Kelompok {$kelompokTerpilih->nama_kelompok} terpilih sebagai pemenang!";
             }
 
             // ============================================================
-            // SIMPAN DATA & HITUNG NOMINAL REALISASI
+            // SIMPAN DATA & HITUNG NOMINAL
             // ============================================================
-            $jumlahAnggotaMenang = $pemenangList->count();
-            
-            // Perbaikan: Jika Kelompok (3 Tahun), Nominal iuran dibagi jumlah anggota
-            // Jika Individu (1 Tahun), Nominal iuran tetap (Target Full)
-            $nominalPerOrang = ($skema->durasi_bulan > 12) 
-                                ? ($nominalTargetPerOrang / $jumlahAnggotaMenang) 
-                                : $nominalTargetPerOrang;
-
             foreach ($pemenangList as $p) {
+                // Jika ada kelompok, nominal dibagi. Jika tidak, nominal full.
+                $nominalRealisasi = (!is_null($p->id_kelompok)) 
+                    ? ($nominalTargetPerOrang / $pemenangList->count()) 
+                    : $nominalTargetPerOrang;
+
                 $undian = UndianArisan::create([
                     'id_skema'          => $skema->id_skema,
                     'id_pesertaarisan'  => $p->id_pesertaarisan,
@@ -156,18 +154,59 @@ class UndianArisanController extends Controller
                 PengeluaranArisan::create([
                     'id_undian'           => $undian->id_undian,
                     'order_id'            => 'OUT-' . strtoupper(bin2hex(random_bytes(3))),
-                    'nominal'             => $nominalPerOrang,
-                    'keterangan'          => 'Realisasi Qurban: ' . $p->nama . ($skema->durasi_bulan > 12 ? ' (Anggota Kelompok)' : ''),
+                    'nominal'             => $nominalRealisasi,
+                    'keterangan'          => 'Realisasi Qurban: ' . $p->nama . (!is_null($p->id_kelompok) ? ' (Anggota Kelompok)' : ''),
                     'tanggal_pengeluaran' => now()
                 ]);
             }
 
             DB::commit();
-            return back()->with('success', $pesanSukses ?? 'Undian berhasil disimpan.');
+
+            // --- KIRIM NOTIFIKASI WHATSAPP ---
+            $this->kirimNotifPemenang($pemenangList, $skema, $tahunRiil, $namaKelompok);
+
+            return back()->with('success', $pesanSukses);
 
         } catch (\Exception $e) {
             DB::rollback();
-            return back()->with('error', 'Terjadi kesalahan sistem: ' . $e->getMessage());
+            return back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Fungsi Private untuk isi pesan WhatsApp
+     */
+    private function kirimNotifPemenang($pemenangList, $skema, $tahun, $namaKelompok)
+    {
+        $pesanWA = "🎉 *PENGUMUMAN PEMENANG QURBAN " . $tahun . "* 🎉\n";
+        $pesanWA .= "--------------------------------------------------\n\n";
+        $pesanWA .= "Alhamdulillah, proses pengundian untuk skema *" . $skema->nama_skema . "* telah selesai dilakukan.\n\n";
+        
+        // --- LOGIKA PESAN DINAMIS ---
+        if ($namaKelompok) {
+            // Jika Jalur Kelompok
+            $pesanWA .= "Selamat kepada *KELOMPOK: " . $namaKelompok . "*\n";
+            $pesanWA .= "Daftar Anggota:\n";
+        } else {
+            // Jika Jalur Perorangan
+            $pesanWA .= "Selamat kepada Bapak/Ibu pemenang tahun ini:\n";
+        }
+
+        foreach ($pemenangList as $index => $p) {
+            $pesanWA .= ($index + 1) . ". *" . $p->nama . "*\n";
+        }
+        // ----------------------------
+
+        $pesanWA .= "\nSemoga ibadahnya berkah dan menjadi amal jariyah bagi kita semua. Amin.\n\n";
+        $pesanWA .= "_Pesan otomatis dari Sistem Masjid Nurul Huda_";
+
+        try {
+            Http::post(env('WA_BOT_URL'), [
+                'groupId' => env('WA_GROUP_ID'),
+                'message' => $pesanWA
+            ]);
+        } catch (\Exception $e) {
+            \Log::error("Kirim WA Pemenang Gagal: " . $e->getMessage());
         }
     }
 }

@@ -35,4 +35,8 @@ class PesertaArisan extends Model
     {
         return $this->belongsTo(KelompokArisan::class, 'id_kelompok');
     }
+    public function undian()
+    {
+        return $this->hasOne(UndianArisan::class, 'id_pesertaarisan', 'id_pesertaarisan');
+    }
 }

@@ -9,6 +9,7 @@ use App\Models\KegiatanSosial;
 use App\Models\DanaSosial;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class KegiatanSosialController extends Controller
 {
@@ -129,7 +130,9 @@ class KegiatanSosialController extends Controller
                     ->store('pamflet_kegiatan', 'public');
             }
 
-            KegiatanSosial::create($data);
+            $kegiatan = KegiatanSosial::create($data);
+            // Kirim Notifikasi ke WA Group
+            $this->kirimNotifKegiatan($kegiatan);
 
             return redirect()->back()
                 ->with('success', 'Agenda berhasil dipublikasikan!');
@@ -137,6 +140,54 @@ class KegiatanSosialController extends Controller
 
             return redirect()->back()
                 ->with('error', 'Gagal menyimpan agenda: ' . $e->getMessage());
+        }
+    }
+
+    private function kirimNotifKegiatan($kegiatan)
+    {
+        // Susun Tanggal Indonesia
+        $hari = \Carbon\Carbon::parse($kegiatan->tanggal_kegiatan)->translatedFormat('l');
+        $tanggal = \Carbon\Carbon::parse($kegiatan->tanggal_kegiatan)->translatedFormat('d M Y');
+
+        // Link Ngrok kamu
+        $urlWebsite = "https://refutable-supportable-sherlyn.ngrok-free.dev/#sosial";
+
+        // Susun Pesan sesuai format gambar yang kamu kirim tadi
+        $pesan = "❗ *ANNOUNCEMENT* ❗\n\n";
+        $pesan .= "@cahrwdua Proudly Present 🕌😇💫\n";
+        $pesan .= "--------------------------------------------------\n\n";
+        
+        $pesan .= "Acara : *" . strtoupper($kegiatan->nama_kegiatan) . "*\n";
+        $pesan .= "Pada : " . $hari . ", " . $tanggal . "\n";
+        $pesan .= "Bertempat Di : " . $kegiatan->lokasi . "\n";
+        $pesan .= "Target Donasi: Rp " . number_format($kegiatan->target_donasi, 0, ',', '.') . "\n\n";
+        
+        
+        if ($kegiatan->deskripsi_kegiatan) {
+            $pesan .= "📝 *Keterangan:*\n";
+            $pesan .= $kegiatan->deskripsi_kegiatan . "\n\n";
+        }
+
+        $pesan .= "🤝 *INGIN BERDONASI?*\n";
+        $pesan .= "Salurkan bantuan terbaik Bapak/Ibu melalui website resmi kami:\n";
+        $pesan .= "🌐 " . $urlWebsite . "\n\n";
+        $pesan .= "Terima kasih atas partisipasi dan kerja samanya. Semoga kegiatan berjalan lancar. 🙏\n\n";
+        $pesan .= "_Pesan otomatis dari Sistem Masjid Nurul Huda_";
+
+        try {
+            // Langsung kirim pesan teks
+            $response = Http::post(env('WA_BOT_URL'), [
+                'groupId' => env('WA_GROUP_ID'),
+                'message' => $pesan
+            ]);
+
+            // Cek Log jika pengiriman ke API Bot gagal
+            if ($response->failed()) {
+                \Log::error("Bot WA Gagal Kirim: " . $response->body());
+            }
+
+        } catch (\Exception $e) {
+            \Log::error("Koneksi ke Bot WA Bermasalah: " . $e->getMessage());
         }
     }
 

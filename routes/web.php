@@ -85,6 +85,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/transaksi/verifikasi/{id}', [TransaksiAdminController::class, 'verifikasiManual'])->name('transaksi.verifikasi');
         Route::post('/transaksi/generate', [TransaksiAdminController::class, 'generateTagihan'])->name('transaksi.generate');
         Route::get('/transaksi/export', [TransaksiAdminController::class, 'exportPDF'])->name('transaksi.export');
+        Route::post('/transaksi/tagih-wa', [TransaksiAdminController::class, 'kirimTagihanWa'])->name('transaksi.tagih-wa');
         // KEGIATAN SOSIAL ROUTES
         Route::prefix('sosial')->as('sosial.')->group(function () {
             Route::get('/', [KegiatanSosialController::class, 'index'])->name('index');
