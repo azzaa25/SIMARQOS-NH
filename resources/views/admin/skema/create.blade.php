@@ -31,21 +31,29 @@
                                       d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
                             </svg>
                         </span>
-                        <input id="nama_skema" name="nama_skema" type="text" required
-                               placeholder="Contoh: Arisan Qurban Sapi"
-                               class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-200
-                                      focus:ring-2 focus:ring-green-500/10 focus:border-green-600 outline-none transition-all">
+                        <input id="nama_skema" name="nama_skema" type="text" 
+                            value="{{ old('nama_skema') }}" 
+                            placeholder="Contoh: Arisan Qurban Sapi"
+                            class="w-full pl-9 pr-4 py-2 text-sm rounded-lg border transition-all outline-none
+                            {{ $errors->has('nama_skema') ? 'border-red-300 bg-red-50 focus:ring-red-500/10 focus:border-red-500' : 'border-gray-200 focus:ring-green-500/10 focus:border-green-600' }}">
                     </div>
+                    @error('nama_skema')
+                        <p class="text-[10px] text-red-500 font-bold mt-1 ml-1 animate-pulse uppercase">⚠️ {{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="space-y-1">
                     <label class="block text-[10px] font-bold text-gray-500 uppercase ml-1">
                         Iuran per Bulan (Rp)
                     </label>
-                    <input name="nominal_iuran" type="number" required
-                           class="w-full px-4 py-2 text-sm rounded-lg border border-gray-200
-                                  focus:ring-2 focus:ring-green-500/10 focus:border-green-600 outline-none
-                                  font-semibold text-green-700 transition-all">
+                    <input name="nominal_iuran" type="number"
+                        value="{{ old('nominal_iuran') }}"
+                        placeholder="0"
+                        class="w-full px-4 py-2 text-sm rounded-lg border font-semibold transition-all outline-none
+                        {{ $errors->has('nominal_iuran') ? 'border-red-300 bg-red-50 text-red-700' : 'border-gray-200 text-green-700' }}">
+                    @error('nominal_iuran')
+                        <p class="text-[10px] text-red-500 font-bold mt-1 ml-1 animate-pulse uppercase">⚠️ {{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 
@@ -62,6 +70,9 @@
                         <option value="12">1 Tahun (12 Bulan)</option>
                         <option value="36">3 Tahun (36 Bulan)</option>
                     </select>
+                    @error('durasi_bulan')
+                        <p class="text-[10px] text-red-500 font-bold mt-1 ml-1 uppercase italic">! {{ $message }}</p>
+                    @enderror
                 </div>
 
                 <div class="space-y-1">
@@ -75,6 +86,9 @@
                         <option value="perorangan">Perorangan</option>
                         <option value="kelompok">Kelompok</option>
                     </select>
+                    @error('tipe_skema')
+                        <p class="text-[10px] text-red-500 font-bold mt-1 ml-1 uppercase italic">! {{ $message }}</p>
+                    @enderror
                 </div>
             </div>
 

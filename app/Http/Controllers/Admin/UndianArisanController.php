@@ -136,7 +136,7 @@ class UndianArisanController extends Controller
             // ============================================================
             // SIMPAN DATA & HITUNG NOMINAL
             // ============================================================
-            foreach ($pemenangList as $p) {
+            foreach ($pemenangList as $index => $p) { // Tambahkan $index di sini
                 // Jika ada kelompok, nominal dibagi. Jika tidak, nominal full.
                 $nominalRealisasi = (!is_null($p->id_kelompok)) 
                     ? ($nominalTargetPerOrang / $pemenangList->count()) 
@@ -146,7 +146,7 @@ class UndianArisanController extends Controller
                     'id_skema'          => $skema->id_skema,
                     'id_pesertaarisan'  => $p->id_pesertaarisan,
                     'tahun_pelaksanaan' => $tahunRiil,
-                    'urutan_pemenang'   => UndianArisan::where('id_skema', $skema->id_skema)->count() + 1,
+                    'urutan_pemenang'   => $index + 1, 
                     'tanggal_undian'    => now(),
                     'status_undian'     => 'pemenang'
                 ]);

@@ -49,17 +49,28 @@
                         $pendingCount = $pendingUsers->count();
                         $displayUsers = $pendingUsers->take(3);
                     @endphp
+                    @php
+                        $pembayaranHariIni = \App\Models\TransaksiPembayaran::whereDate('updated_at', now()->toDateString())
+                            ->where('status_pembayaran', 'sukses')
+                            ->where('metode_pembayaran', '!=', 'tunai') // Menampilkan selain tunai
+                            ->where('is_read', 0)
+                            ->latest('updated_at') // Urutkan berdasarkan waktu update terbaru
+                            ->get();
+
+                        $notifPembayaranCount = $pembayaranHariIni->count();
+                        $displayPembayaran = $pembayaranHariIni->take(3);
+                    @endphp
 
                     <button onclick="toggleNotif()" class="relative p-2 text-gray-400 bg-white rounded-full border border-gray-100 shadow-sm hover:text-green-700 hover:bg-green-50 transition-all active:scale-90 outline-none">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                         </svg>
                         
-                        @if($pendingCount > 0)
+                        @if(($pendingCount + $notifPembayaranCount) > 0)
                         <span class="absolute top-0 right-0 flex h-5 w-5 transform translate-x-1 -translate-y-1">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                             <span class="relative inline-flex items-center justify-center rounded-full h-5 w-5 bg-red-600 text-[10px] font-bold text-white border-2 border-white shadow-sm">
-                                {{ $pendingCount }}
+                                {{ $pendingCount + $notifPembayaranCount }}
                             </span>
                         </span>
                         @endif
@@ -68,13 +79,67 @@
                     <div id="notif-dropdown" class="hidden absolute right-0 mt-4 w-80 bg-white rounded-[28px] shadow-2xl border border-gray-100 overflow-hidden z-50 animate-dropdown">
                         <div class="p-5 border-b border-gray-50 flex justify-between items-center bg-gray-50/50">
                             <div>
-                                <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Pendaftar Baru</h3>
-                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Butuh Verifikasi</p>
+                                <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Notifikasi Sistem</h3>
+                                <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Aktivitas Terbaru</p>
                             </div>
-                            <span class="text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold uppercase">{{ $pendingCount }} Antrian</span>
+                            <span class="text-[9px] bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full font-bold uppercase">{{ $pendingCount + $notifPembayaranCount }} Notif</span>
                         </div>
                         
                         <div class="max-h-96 overflow-y-auto custom-scrollbar">
+                            {{-- ================= NOTIF PEMBAYARAN ================= --}}
+                            <div class="px-4 pt-3 pb-1">
+                                <p class="text-[10px] font-bold text-green-700 uppercase tracking-widest">
+                                    Notifikasi Pembayaran
+                                </p>
+                            </div>
+                            @forelse($displayPembayaran as $trx)
+                            <a href="{{ route('admin.transaksi.index') }}" 
+                                onclick="hapusNotif(event, this)"
+                                class="notif-item block p-4 border-b border-gray-50 hover:bg-green-50/40 transition-all">
+
+                                <div class="flex items-center justify-between gap-3">
+                                    <div class="flex items-center gap-3 overflow-hidden">
+                                        
+                                        <div class="w-10 h-10 bg-green-600 text-white rounded-2xl flex items-center justify-center shrink-0 font-black text-xs">
+                                            Rp
+                                        </div>
+
+                                        <div class="overflow-hidden">
+                                            <p class="text-xs font-black text-green-800 leading-tight uppercase truncate">
+                                                Pembayaran Arisan Masuk
+                                            </p>
+                                            <p class="text-[10px] text-gray-500 font-bold truncate">
+                                                {{ $trx->peserta->nama ?? 'Peserta' }} • Rp {{ number_format($trx->nominal,0,',','.') }}
+                                            </p>
+
+                                            <p class="text-[9px] text-gray-400 italic">
+                                                Bulan {{ $trx->bulan_iuran }}
+                                            </p>
+                                            <p class="text-[9px] text-gray-400 italic">
+                                                {{ $trx->updated_at->diffForHumans() }}
+                                            </p>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="text-green-600 text-xs font-black">
+                                        ✔
+                                    </div>
+                                </div>
+                            </a>
+                            @empty
+                            <div class="p-6 text-center">
+                                <p class="text-[10px] text-gray-400 font-bold uppercase">
+                                    Belum ada pembayaran hari ini
+                                </p>
+                            </div>
+                            @endforelse
+                            {{-- ================= NOTIF PENDAFTAR BARU ================= --}}
+                            <div class="px-4 pt-3 pb-1">
+                                <p class="text-[10px] font-bold text-orange-600 uppercase tracking-widest">
+                                    Pendaftar Baru
+                                </p>
+                            </div>
                             @forelse($displayUsers as $user)
                             <div class="p-4 border-b border-gray-50 hover:bg-gray-50/30 transition-all">
                                 <div class="flex items-center justify-between gap-3">
@@ -119,7 +184,7 @@
                         </div>
 
                         <a href="{{ route('admin.pending.index') }}" class="block p-4 text-center bg-gray-50 text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-gray-100 transition-all">
-                            @if($pendingCount > 3) Lihat +{{ $pendingCount - 3 }} Lainnya @else Lihat Semua Pending @endif
+                            @if($pendingCount > 3) Lihat +{{ $pendingCount - 3 }} Lainnya @else Lihat Semua Peserta Pending @endif
                         </a>
                     </div>
                 </div>
@@ -186,6 +251,19 @@
         });
     </script>
     @endif
+    <script>
+    function hapusNotif(e, el) {
+        e.preventDefault();
+
+        el.style.transition = "all 0.3s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(50px)";
+
+        setTimeout(() => {
+            window.location.href = el.href;
+        }, 300);
+    }
+    </script>
 
 </body>
 </html>

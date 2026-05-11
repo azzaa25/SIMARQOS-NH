@@ -24,24 +24,30 @@ class SkemaArisanController extends Controller
     // SIMPAN DATA
     public function store(Request $request)
     {
-        $request->validate([
-            'nama_skema'     => 'required|string|max:100',
-            'durasi_bulan'   => 'required|in:12,36',
-            'tipe_skema'     => 'required|in:perorangan,kelompok',
-            'nominal_iuran'  => 'required|numeric|min:0',
-            'deskripsi'      => 'nullable|string'
+        $validated = $request->validate([
+            'nama_skema'    => 'required|string|max:100',
+            'durasi_bulan'  => 'required|in:12,36',
+            'tipe_skema'    => 'required|in:perorangan,kelompok',
+            'nominal_iuran' => 'required|numeric|min:1000',
+            'deskripsi'     => 'nullable|string'
+        ], [
+            'nama_skema.required'    => 'Nama paket arisan wajib diisi.',
+            'nominal_iuran.required' => 'Nominal iuran tidak boleh kosong.',
+            'nominal_iuran.min'      => 'Minimal iuran adalah Rp 1.000.',
+            'durasi_bulan.required'  => 'Silakan pilih durasi arisan.',
+            'tipe_skema.required'    => 'Silakan pilih tipe skema.',
         ]);
 
-        SkemaArisan::create([
-            'nama_skema'    => $request->nama_skema,
-            'durasi_bulan'  => $request->durasi_bulan,
-            'tipe_skema'    => $request->tipe_skema,
-            'nominal_iuran' => $request->nominal_iuran,
-            'deskripsi'     => $request->deskripsi,
-        ]);
+        try {
+            SkemaArisan::create($validated);
 
-        return redirect()->route('admin.skema.index')
-            ->with('success', 'Skema berhasil ditambahkan');
+            return redirect()->route('admin.skema.index')
+                ->with('success', 'Skema "' . $request->nama_skema . '" berhasil ditambahkan.');
+        } catch (\Exception $e) {
+            Log::error('Gagal simpan skema: ' . $e->getMessage());
+            
+            return back()->withInput()->with('error', 'Terjadi kesalahan sistem saat menyimpan data.');
+        }
     }
 
     // FORM EDIT
@@ -54,26 +60,28 @@ class SkemaArisanController extends Controller
     // UPDATE DATA
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'nama_skema'     => 'required|string|max:100',
-            'durasi_bulan'   => 'required|in:12,36',
-            'tipe_skema'     => 'required|in:perorangan,kelompok',
-            'nominal_iuran'  => 'required|numeric|min:0',
-            'deskripsi'      => 'nullable|string'
-        ]);
-
         $skema = SkemaArisan::findOrFail($id);
 
-        $skema->update([
-            'nama_skema'    => $request->nama_skema,
-            'durasi_bulan'  => $request->durasi_bulan,
-            'tipe_skema'    => $request->tipe_skema,
-            'nominal_iuran' => $request->nominal_iuran,
-            'deskripsi'     => $request->deskripsi,
+        $validated = $request->validate([
+            'nama_skema'    => 'required|string|max:100',
+            'durasi_bulan'  => 'required|in:12,36',
+            'tipe_skema'    => 'required|in:perorangan,kelompok',
+            'nominal_iuran' => 'required|numeric|min:1000',
+            'deskripsi'     => 'nullable|string'
+        ], [
+            'nama_skema.required' => 'Nama paket wajib diisi.',
+            'nominal_iuran.min'   => 'Nominal iuran minimal Rp 1.000.',
         ]);
 
-        return redirect()->route('admin.skema.index')
-            ->with('success', 'Skema berhasil diperbarui');
+        try {
+            $skema->update($validated);
+
+            return redirect()->route('admin.skema.index')
+                ->with('success', 'Perubahan skema berhasil disimpan.');
+        } catch (\Exception $e) {
+            Log::error('Gagal update skema ID ' . $id . ': ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Gagal memperbarui data.');
+        }
     }
 
     // HAPUS DATA

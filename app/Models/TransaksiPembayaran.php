@@ -17,7 +17,7 @@ class TransaksiPembayaran extends Model
         'snap_token', 
         'status_pembayaran', 
         'metode_pembayaran', 
-        'pdf_url'
+        'is_read'
     ];
 
     public function peserta()

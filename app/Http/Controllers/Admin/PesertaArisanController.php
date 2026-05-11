@@ -73,15 +73,16 @@ class PesertaArisanController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama'     => 'required|string|max:255',
+            'nama'     => 'required|string|max:255|unique:peserta_arisan,nama',
             'email'    => 'required|email|unique:users,email',
             'password' => 'required|min:8',
-            'no_hp'    => 'required',
+            'no_hp'    => 'required|unique:peserta_arisan,no_hp',
             'alamat'   => 'required',
             'id_skema' => 'required|exists:skema_arisan,id_skema',
         ], [
             // Pesan Error Kustom
             'nama.required'     => 'Nama lengkap wajib diisi.',
+            'nama.unique'       => 'Nama ini sudah digunakan oleh peserta lain.',
             'email.required'    => 'Alamat email wajib diisi.',
             'email.email'       => 'Format email tidak valid.',
             'email.unique'      => 'Email sudah terdaftar di sistem.',
@@ -89,6 +90,7 @@ class PesertaArisanController extends Controller
             'password.min'      => 'Password terlalu pendek, minimal harus 8 karakter.',
             'id_skema.required' => 'Silakan pilih paket arisan.',
             'no_hp.required'    => 'Nomor WhatsApp wajib diisi.',
+            'no_hp.unique'      => 'Nomor WhatsApp sudah digunakan oleh peserta lain.',
             'alamat.required'   => 'Alamat domisili wajib diisi.',
         ]);
 
@@ -145,6 +147,8 @@ class PesertaArisanController extends Controller
             'nama.required'   => 'Nama lengkap wajib diisi.',
             'no_hp.required'  => 'Nomor WhatsApp wajib diisi.',
             'alamat.required' => 'Alamat domisili wajib diisi.',
+            'status.required' => 'Status peserta wajib diisi.',
+            'status.in'       => 'Status peserta harus berupa "aktif" atau "nonaktif".',
         ]);
 
         // ✅ UPDATE PESERTA

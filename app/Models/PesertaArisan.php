@@ -39,4 +39,8 @@ class PesertaArisan extends Model
     {
         return $this->hasOne(UndianArisan::class, 'id_pesertaarisan', 'id_pesertaarisan');
     }
+    public function transaksi()
+    {
+        return $this->hasMany(TransaksiPembayaran::class, 'id_pesertaarisan', 'id_pesertaarisan');
+    }
 }

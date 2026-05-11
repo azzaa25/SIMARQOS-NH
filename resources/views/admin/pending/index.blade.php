@@ -35,6 +35,7 @@
                 <tr>
                     <th class="px-8 py-6">Profil Pendaftar</th>
                     <th class="px-6 py-6">Kontak Email</th>
+                    <th class="px-6 py-6">Skema Arisan</th>
                     <th class="px-6 py-6 text-center">Waktu Registrasi</th>
                     <th class="px-8 py-6 text-center">Tindakan Konfirmasi</th>
                 </tr>
@@ -58,6 +59,15 @@
                     </td>
                     <td class="px-6 py-5 text-center md:text-left">
                         <span class="text-gray-600 font-semibold italic">{{ $user->email }}</span>
+                    </td>
+                    <td class="px-6 py-5 text-center">
+                        @if($user->peserta && $user->peserta->skemaArisan)
+                            <span class="px-4 py-1.5 bg-green-50 text-green-700 border border-green-100 rounded-xl text-[10px] font-black uppercase tracking-wide">
+                                {{ $user->peserta->skemaArisan->nama_skema }}
+                            </span>
+                        @else
+                            <span class="text-gray-300 italic text-[10px]">Belum Memilih</span>
+                        @endif
                     </td>
                     <td class="px-6 py-5 text-center">
                         <span class="px-3 py-1 bg-gray-100 text-gray-500 rounded-lg text-[10px] font-bold uppercase tracking-tighter">

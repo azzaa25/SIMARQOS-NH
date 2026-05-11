@@ -293,7 +293,7 @@ class KegiatanSosialController extends Controller
 
     /*
     =============================
-    PENCAIRAN DANA
+    PENCAIRAN DANA (UPDATE LOGIC)
     =============================
     */
     public function cairkanDana(Request $request, $id)
@@ -305,13 +305,27 @@ class KegiatanSosialController extends Controller
 
         $kegiatan = KegiatanSosial::findOrFail($id);
 
-        $saldoTersedia = $kegiatan->total_masuk - $kegiatan->total_keluar;
+        // 1. CEK STATUS KEGIATAN
+        // Jika masih 'rencana', dilarang melakukan pencairan
+        if ($kegiatan->status_kegiatan === 'rencana') {
+            return redirect()->back()
+                ->with('error', 'Gagal! Dana tidak dapat dicairkan jika status kegiatan masih RENCANA. Pencairan hanya dapat dilakukan saat kegiatan BERLANGSUNG atau SELESAI.');
+        }
 
+        // 2. CEK SALDO (Logika yang sudah ada)
+        $saldoTersedia = $kegiatan->total_masuk - $kegiatan->total_keluar;
+        
+        if ($saldoTersedia <= 0) {
+            return redirect()->back()
+                ->with('error', 'Gagal! Saldo kegiatan ini sudah Rp 0 atau sudah habis ditarik.');
+        }
+        
         if ($request->nominal > $saldoTersedia) {
             return redirect()->back()
                 ->with('error', 'Dana yang dicairkan melebihi saldo kegiatan!');
         }
 
+        // 3. EKSEKUSI PENCAIRAN
         DanaSosial::create([
             'id_kegiatan' => $id,
             'nama_donatur' => 'Admin',
@@ -417,6 +431,21 @@ class KegiatanSosialController extends Controller
         $fileName = 'Laporan-' . \Str::slug($kegiatan->nama_kegiatan) . '-' . date('Y-m-d') . '.pdf';
 
         return $pdf->download($fileName);
+    }
+    public function show($id)
+    {
+        // Ambil data kegiatan beserta kategorinya
+        $item = KegiatanSosial::with('kategori')->findOrFail($id);
+
+        // Ambil daftar donatur yang pembayarannya sudah sukses (settlement/success)
+        // Diasumsikan nama tabel dana sosial kamu adalah dana_sosials
+        $donatur = DanaSosial::where('id_kegiatan', $id)
+                    ->where('tipe_dana', 'masuk')
+                    ->whereIn('status_pembayaran', ['success', 'settlement'])
+                    ->orderBy('tanggal_input', 'desc')
+                    ->get();
+
+        return view('admin.sosial.show', compact('item', 'donatur'));
     }
 
 }

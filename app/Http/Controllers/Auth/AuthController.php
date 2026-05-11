@@ -56,9 +56,15 @@ class AuthController extends Controller
 
                 Auth::logout();
 
-                return back()->withErrors([
-                    'email' => 'Akun Anda masih menunggu konfirmasi admin.'
-                ]);
+                if ($user->status === 'pending') {
+                    $message = 'Akun Anda masih menunggu konfirmasi dari Admin.';
+                } elseif ($user->status === 'nonaktif') {
+                    $message = 'Akun Anda telah dinonaktifkan. Silakan hubungi Admin.';
+                } else {
+                    $message = 'Status akun Anda tidak valid.';
+                }
+
+                return back()->withErrors(['email' => $message]);
             }
 
             $request->session()->regenerate();

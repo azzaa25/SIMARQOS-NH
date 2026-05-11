@@ -42,6 +42,26 @@ class TransaksiAdminController extends Controller
 
         $transaksi = $query->latest()->get();
 
+        // ================= TAMBAHAN FILTER UNTUK STATISTIK =================
+        if ($bulanFilter && $tahunFilter) {
+
+            $start = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)
+                        ->subMonths(5)
+                        ->startOfMonth();
+
+            $end = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)
+                        ->endOfMonth();
+
+        } else {
+
+            $start = Carbon::now()->subMonths(5)->startOfMonth();
+            $end   = Carbon::now()->endOfMonth();
+        }
+
+        // Query khusus statistik (tidak ganggu query utama)
+        $statistikQuery = TransaksiPembayaran::where('status_pembayaran', 'sukses')
+            ->whereBetween('created_at', [$start, $end]);
+
         // --- Statistik tetap Global agar saldo ID 8-52 tetap terhitung ---
         $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
         
@@ -71,12 +91,26 @@ class TransaksiAdminController extends Controller
             ->orderBy('total', 'desc')
             ->first();
 
-        $grafikBulanan = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->select(DB::raw('SUM(nominal) as total'), DB::raw('MONTH(created_at) as bulan'))
-            ->where('created_at', '>=', Carbon::now()->subMonths(6))
+        // ================= GRAFIK BERDASARKAN FILTER =================
+        $grafikBulanan = $statistikQuery
+            ->select(
+                DB::raw('SUM(nominal) as total'),
+                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as bulan')
+            )
             ->groupBy('bulan')
             ->orderBy('bulan', 'asc')
-            ->pluck('total');
+            ->pluck('total', 'bulan');
+
+        $periode = collect();
+        $startLoop = $start->copy();
+
+        for ($i = 0; $i < 6; $i++) {
+            $key = $startLoop->format('Y-m');
+            $periode[$key] = $grafikBulanan[$key] ?? 0;
+            $startLoop->addMonth();
+        }
+
+        $grafikBulanan = $periode;
 
         return view('admin.transaksi.index', compact(
             'transaksi', 'tunggakan', 'totalPeserta', 'totalKas', 
@@ -172,19 +206,44 @@ class TransaksiAdminController extends Controller
     {
         try {
             $pesertas = PesertaArisan::whereHas('user', function($q) {
-                $q->where('status', 'aktif');
-            })->with('skemaArisan')->get();
+                    $q->where('status', 'aktif');
+                })
+                ->with(['skemaArisan', 'undian', 'transaksi' => function($q) {
+                    // Filter ini tetap dipakai untuk keperluan "Auto-Nonaktif" (hanya yang sudah bayar lunas)
+                    $q->where('status_pembayaran', 'sukses');
+                }])->get();
 
             $bulanIni = Carbon::now()->translatedFormat('F Y');
             $count = 0;
-            $daftarNama = []; // Untuk menampung nama yang dibuatkan tagihan
+            $daftarNama = []; 
 
             foreach ($pesertas as $p) {
                 if (!$p->skemaArisan) continue;
 
+                // --- PERBAIKAN LOGIKA TENOR ---
+                
+                // 1. Hitung TOTAL RECORD tagihan yang pernah dibuat (Sukses, Pending, Gagal semuanya dihitung)
+                $totalTagihanPernahDibuat = \App\Models\TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)->count();
+                $tenorSkema = $p->skemaArisan->durasi_bulan; // Misal: 12
+                // 2. Jika jumlah tagihan yang ada sudah mencapai atau melebihi tenor skema
+                if ($totalTagihanPernahDibuat >= $tenorSkema) {
+                    // Cek apakah dia benar-benar sudah lunas (untuk mematikan status user)
+                    $jumlahCicilanLunas = $p->transaksi->count(); // Mengambil data 'sukses' dari eager loading
+                    if ($jumlahCicilanLunas >= $tenorSkema && $p->undian) {
+                        // Jika sudah lunas 12x DAN sudah menang, nonaktifkan agar tidak masuk query bulan depan
+                        if ($p->user) {
+                            $p->user->update(['status' => 'nonaktif']);
+                        }
+                    }
+                    
+                    // Loncat ke peserta berikutnya, JANGAN buatkan tagihan baru
+                    continue; 
+                }
+
+                // 3. CEK APAKAH TAGIHAN BULAN INI SUDAH ADA (Double Check agar tidak duplikat di bulan yang sama)
                 $exists = TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)
-                            ->where('bulan_iuran', $bulanIni)
-                            ->exists();
+                                ->where('bulan_iuran', $bulanIni)
+                                ->exists();
 
                 if (!$exists) {
                     $nominalSkema = $p->skemaArisan->nominal_iuran;
@@ -198,7 +257,6 @@ class TransaksiAdminController extends Controller
                         'status_pembayaran' => 'pending'
                     ]);
                     
-                    // Masukkan nama ke daftar untuk notifikasi
                     $daftarNama[] = $p->nama; 
                     $count++;
                 }
@@ -210,7 +268,6 @@ class TransaksiAdminController extends Controller
                 $pesanWA .= "Periode: *" . $bulanIni . "*\n\n";
                 $pesanWA .= "Assalamu'alaikum Wr. Wb.\nMohon perhatian Bapak/Ibu, tagihan arisan bulan ini telah diterbitkan untuk:\n\n";
                 
-                // Batasi tampilan nama jika terlalu banyak agar chat tidak kepanjangan
                 $limit = 10;
                 foreach (array_slice($daftarNama, 0, $limit) as $index => $nama) {
                     $pesanWA .= ($index + 1) . ". " . $nama . "\n";
@@ -223,18 +280,15 @@ class TransaksiAdminController extends Controller
                 $pesanWA .= "\nSilakan melakukan pembayaran melalui aplikasi atau setor tunai ke pengurus.\n";
                 $pesanWA .= "Terima kasih atas partisipasinya. 🙏";
 
-                // Kirim ke Bot Node.js
                 try {
-                    Http::post(env('WA_BOT_URL'), [
+                    \Illuminate\Support\Facades\Http::post(env('WA_BOT_URL'), [
                         'groupId' => env('WA_GROUP_ID'),
                         'message' => $pesanWA
                     ]);
                 } catch (\Exception $waEx) {
-                    // Jangan hentikan proses jika WA gagal, cukup log saja
                     \Log::error("Gagal kirim WA Tagihan: " . $waEx->getMessage());
                 }
             }
-            // --- END LOGIKA WA ---
 
             if (request()->wantsJson()) {
                 return response()->json([
@@ -255,7 +309,7 @@ class TransaksiAdminController extends Controller
             return back()->with('error', $e->getMessage());
         }
     }
-
+    
     public function verifikasiManual($id)
     {
         $trx = TransaksiPembayaran::findOrFail($id);
@@ -301,7 +355,7 @@ class TransaksiAdminController extends Controller
         
         return $pdf->download($fileName);
     }
-    public function kirimTagihanWa()
+   public function kirimTagihanWa()
     {
         try {
             $tunggakan = TransaksiPembayaran::with('peserta')
@@ -313,21 +367,31 @@ class TransaksiAdminController extends Controller
                 return back()->with('error', 'Tidak ada tunggakan.');
             }
 
-            $bulanSekarangIndo = Carbon::now()->translatedFormat('F Y');
+            // 1. Pastikan Carbon menggunakan locale Indonesia
+            \Carbon\Carbon::setLocale('id');
+            $bulanSekarangIndo = \Carbon\Carbon::now()->translatedFormat('F Y'); 
             
             $pesanWA = "⚠️ *PENGINGAT IURAN ARISAN*\n";
             $pesanWA .= "--------------------------------\n\n";
 
-            foreach ($tunggakan as $bulanInggris => $daftarTrx) {
-                // --- PROSES TERJEMAH BULAN ---
-                $bulanIndo = str_replace(
-                    ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                    ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
-                    $bulanInggris
-                );
+            foreach ($tunggakan as $bulanDibuat => $daftarTrx) {
+                
+                // 2. Gunakan Carbon untuk memparsing string bulan dari database agar formatnya konsisten
+                // Misal $bulanDibuat isinya "May 2026" atau "Mei 2026"
+                try {
+                    $bulanIndo = \Carbon\Carbon::parse($bulanDibuat)->translatedFormat('F Y');
+                } catch (\Exception $e) {
+                    // Jika parsing gagal, gunakan replace manual Anda sebagai cadangan
+                    $bulanIndo = str_replace(
+                        ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+                        ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
+                        $bulanDibuat
+                    );
+                }
 
-                // Cek apakah periode ini adalah bulan berjalan (pakai nama bulan yang sudah Indo)
-                $label = ($bulanIndo !== $bulanSekarangIndo) ? "*PERIODE $bulanIndo (TUNGGAKAN LAMA)*" : "PERIODE $bulanIndo (TAGIHAN BARU)";
+                $isBulanBerjalan = (trim($bulanIndo) === trim($bulanSekarangIndo));
+
+                $label = (!$isBulanBerjalan) ? "*PERIODE $bulanIndo (TUNGGAKAN LAMA)*" : "PERIODE $bulanIndo (TAGIHAN BARU)";
                 
                 $pesanWA .= "$label:\n";
 
@@ -335,7 +399,7 @@ class TransaksiAdminController extends Controller
                     $nama = $item->peserta->nama;
                     $nominal = number_format($item->nominal, 0, ',', '.');
                     
-                    if ($bulanIndo !== $bulanSekarangIndo) {
+                    if (!$isBulanBerjalan) {
                         $pesanWA .= ($index + 1) . ". *" . $nama . "* (Rp " . $nominal . ")\n";
                     } else {
                         $pesanWA .= ($index + 1) . ". " . $nama . " (Rp " . $nominal . ")\n";
@@ -347,7 +411,8 @@ class TransaksiAdminController extends Controller
             $pesanWA .= "--------------------------------\n";
             $pesanWA .= "Segera bayar via aplikasi atau tunai. Terima kasih. 🙏";
 
-            Http::post(env('WA_BOT_URL'), [
+            // Kirim WA...
+            \Illuminate\Support\Facades\Http::post(env('WA_BOT_URL'), [
                 'groupId' => env('WA_GROUP_ID'),
                 'message' => $pesanWA
             ]);

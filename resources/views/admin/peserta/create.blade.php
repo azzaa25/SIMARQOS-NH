@@ -133,7 +133,20 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal Mendaftarkan',
+                text: 'Mohon periksa kembali. Nama atau Nomor HP mungkin sudah terdaftar di sistem.',
+                confirmButtonColor: '#147a54',
+                customClass: { popup: 'rounded-[32px]' }
+            });
+        @endif
+    });
+
     function confirmStore() {
+        // ... (kode confirmStore Anda yang sudah ada tetap sama)
         const nama = document.getElementById('input_nama').value;
         if (!nama) {
             Swal.fire({

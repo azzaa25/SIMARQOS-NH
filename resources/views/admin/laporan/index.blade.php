@@ -39,19 +39,19 @@
     {{-- Statistik Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-            <p class="text-[9px] font-black text-gray-400 uppercase mb-1 tracking-widest">Total Iuran</p>
+            <p class="text-[11px] font-black text-gray-400 uppercase mb-1 tracking-widest">Total Iuran Masuk</p>
             <h3 class="text-xl font-black text-green-700">Rp {{ number_format($totalMasuk, 0, ',', '.') }}</h3>
         </div>
         <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-            <p class="text-[9px] font-black text-red-400 uppercase mb-1 tracking-widest">Dana Keluar</p>
+            <p class="text-[11px] font-black text-red-400 uppercase mb-1 tracking-widest">Dana Keluar</p>
             <h3 class="text-xl font-black text-slate-800">- Rp {{ number_format($totalKeluarGlobal, 0, ',', '.') }}</h3>
         </div>
         <div class="bg-green-50 p-5 rounded-[32px] border border-green-100 shadow-sm">
-            <p class="text-[9px] font-black text-green-600 uppercase mb-1 tracking-widest">Sisa Saldo Kas</p>
+            <p class="text-[11px] font-black text-green-600 uppercase mb-1 tracking-widest">Sisa Saldo Kas</p>
             <h3 class="text-xl font-black text-green-900">Rp {{ number_format($saldoKasSaatIni, 0, ',', '.') }}</h3>
         </div>
         <div class="bg-white p-5 rounded-[32px] border border-gray-100 shadow-sm">
-            <p class="text-[9px] font-black text-gray-400 uppercase mb-1 tracking-widest">Record</p>
+            <p class="text-[11px] font-black text-gray-400 uppercase mb-1 tracking-widest">Record</p>
             <h3 class="text-xl font-black text-slate-800">{{ $pengeluarans->total() }} Item</h3>
         </div>
     </div>
@@ -94,18 +94,18 @@
                                         @endif
                                     </div>
                                     <div>
-                                        <h3 class="text-xs font-black {{ $groupId === 'perorangan' ? 'text-slate-700' : 'text-blue-900' }} uppercase tracking-widest">
+                                        <h3 class="text-base font-black {{ $groupId === 'perorangan' ? 'text-slate-700' : 'text-blue-900' }} uppercase tracking-widest">
                                             {{ $groupId === 'perorangan' ? 'Peserta Perorangan' : 'Kelompok: ' . $items->first()->undian->peserta->kelompok->nama_kelompok }}
                                         </h3>
-                                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">
+                                        <p class="text-[11px] text-gray-400 font-bold uppercase tracking-tighter">
                                             Skema: {{ $items->first()->undian->skema->nama_skema }}
                                         </p>
                                     </div>
                                 </div>
                                 {{-- TOTAL REALISASI (FIX: Menggunakan data Global agar tidak kepotong pagination) --}}
                                 <div class="text-right">
-                                    <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Total Realisasi</p>
-                                    <p class="text-sm font-black {{ $groupId === 'perorangan' ? 'text-slate-800' : 'text-blue-700' }}">
+                                    <p class="text-[11px] font-black text-gray-400 uppercase tracking-widest leading-none mb-1">Total Realisasi</p>
+                                    <p class="text-base font-black {{ $groupId === 'perorangan' ? 'text-slate-800' : 'text-blue-700' }}">
                                         @php
                                             $totalGrup = $allPengeluarans->filter(function($ap) use ($groupId, $tahun) {
                                                 $apYear = \Carbon\Carbon::parse($ap->tanggal_pengeluaran)->format('Y');
@@ -120,35 +120,53 @@
 
                             <div class="overflow-x-auto">
                                 <table class="w-full text-left">
-                                    <thead class="bg-white text-[9px] uppercase tracking-[0.2em] text-gray-400 font-black border-b border-gray-100">
+                                    <thead class="bg-white text-[11px] uppercase tracking-[0.15em] text-gray-400 font-black border-b border-gray-100">
                                         <tr>
-                                            <th class="px-8 py-4 text-center" width="10%">No</th>
-                                            <th class="px-6 py-4">Nama Peserta</th>
-                                            <th class="px-6 py-4 text-center">Nominal Per Orang</th>
-                                            <th class="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Tahun Undian</th>
+                                            <th class="px-8 py-5 text-center">No</th>
+                                            <th class="px-6 py-5">Nama Peserta</th>
+                                            <th class="px-6 py-5 text-center">Nominal</th>
+                                            <th class="px-8 py-5 text-center">Tahun Undian</th>
                                         </tr>
                                     </thead>
+
                                     <tbody class="divide-y divide-gray-50">
                                         @foreach($items as $p)
-                                            <tr class="hover:bg-green-50/20 transition-all group">
-                                                <td class="px-8 py-4 text-center">
-                                                    <span class="text-[10px] font-black text-slate-300">{{ str_pad($rowNumber++, 2, '0', STR_PAD_LEFT) }}</span>
+                                            <tr class="hover:bg-green-50/30 transition-all group">
+                                                
+                                                {{-- NOMOR --}}
+                                                <td class="px-8 py-5 text-center">
+                                                    <span class="text-sm font-black text-slate-400">
+                                                        {{ str_pad($rowNumber++, 2, '0', STR_PAD_LEFT) }}
+                                                    </span>
                                                 </td>
-                                                <td class="px-6 py-4">
-                                                    <p class="text-xs font-black text-slate-800 uppercase">{{ $p->undian->peserta->nama }}</p>
-                                                    <p class="text-[9px] text-gray-400 font-medium italic mt-0.5">{{ \Carbon\Carbon::parse($p->tanggal_pengeluaran)->translatedFormat('d M Y') }}</p>
+
+                                                {{-- NAMA --}}
+                                                <td class="px-6 py-5">
+                                                    <p class="text-sm font-extrabold text-slate-900 uppercase tracking-tight">
+                                                        {{ $p->undian->peserta->nama }}
+                                                    </p>
+                                                    <p class="text-xs text-gray-500 italic mt-1">
+                                                        {{ \Carbon\Carbon::parse($p->tanggal_pengeluaran)->translatedFormat('d M Y') }}
+                                                    </p>
                                                 </td>
-                                                <td class="px-6 py-4 text-center">
-                                                    <span class="px-3 py-1 bg-red-50 text-red-600 rounded-full text-[10px] font-black italic shadow-sm border border-red-100">
+
+                                                {{-- NOMINAL --}}
+                                                <td class="px-6 py-5 text-center">
+                                                    <span class="px-4 py-1.5 bg-red-50 text-red-600 rounded-xl text-sm font-black shadow-sm border border-red-100">
                                                         Rp {{ number_format($p->nominal, 0, ',', '.') }}
                                                     </span>
                                                 </td>
-                                                <td class="px-8 py-6 text-center">
-                                                    <div class="inline-block {{ $loop->parent->iteration % 2 == 0 ? 'bg-slate-100 text-slate-600' : 'bg-green-100 text-green-700' }} px-4 py-1.5 rounded-[12px] text-[10px] font-black uppercase tracking-widest border border-black/5 shadow-sm">
+
+                                                {{-- TAHUN --}}
+                                                <td class="px-8 py-5 text-center">
+                                                    <div class="inline-block bg-green-100 text-green-700 px-4 py-1.5 rounded-xl text-xs font-black uppercase tracking-widest border border-green-200 shadow-sm">
                                                         Undian {{ $p->undian->tahun_pelaksanaan ?? '-' }}
                                                     </div>
-                                                    <p class="text-[8px] font-bold text-gray-300 uppercase mt-1.5 tracking-widest">ID: {{ $p->order_id }}</p>
+                                                    <p class="text-[10px] font-bold text-gray-300 mt-2">
+                                                        ID: {{ $p->order_id }}
+                                                    </p>
                                                 </td>
+
                                             </tr>
                                         @endforeach
                                     </tbody>

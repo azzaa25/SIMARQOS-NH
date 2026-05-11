@@ -87,56 +87,77 @@
             {{-- TABLE DALAM GRUP --}}
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-white text-[9px] uppercase tracking-[0.2em] text-gray-400 font-black border-b border-gray-50">
+                    <thead class="bg-white text-[10px] uppercase tracking-[0.2em] text-slate-500 font-black border-b border-gray-100">
                         <tr>
-                            <th class="px-8 py-4">Identitas</th>
-                            <th class="px-6 py-4">Alamat & Kontak</th>
-                            <th class="px-6 py-4">Peran</th>
-                            <th class="px-6 py-4 text-center">Status</th>
-                            <th class="px-8 py-4 text-center">Tindakan</th>
+                            <th class="px-8 py-5">Identitas Peserta</th>
+                            <th class="px-6 py-5">Alamat & Kontak</th>
+                            <th class="px-6 py-5">Peran Sistem</th>
+                            <th class="px-6 py-5 text-center">Status Akun</th>
+                            <th class="px-8 py-5 text-center">Tindakan</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-50">
+                    <tbody class="divide-y divide-gray-100">
                         @foreach($items as $p)
-                        <tr class="hover:bg-green-50/20 transition-colors group">
-                            <td class="px-8 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 bg-green-800 text-white rounded-xl flex items-center justify-center text-[10px] font-black uppercase shadow-md">
+                        <tr class="hover:bg-green-50/30 transition-colors group">
+                            {{-- IDENTITAS --}}
+                            <td class="px-8 py-5">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-11 h-11 bg-green-900 text-white rounded-2xl flex items-center justify-center text-sm font-black uppercase shadow-md">
                                         {{ substr($p->nama, 0, 1) }}
                                     </div>
                                     <div>
-                                        <p class="font-bold text-gray-800 text-xs">{{ $p->nama }}</p>
-                                        <p class="text-[9px] text-gray-400 font-bold tracking-tighter">ID #{{ str_pad($p->id_pesertaarisan, 4, '0', STR_PAD_LEFT) }}</p>
+                                        <p class="font-extrabold text-slate-900 text-sm tracking-tight">{{ $p->nama }}</p>
+                                        <p class="text-[10px] text-green-700 font-black uppercase tracking-widest mt-0.5">ID #{{ str_pad($p->id_pesertaarisan, 4, '0', STR_PAD_LEFT) }}</p>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4">
-                                <p class="text-[10px] font-bold text-gray-600 mb-0.5">{{ $p->no_hp }}</p>
-                                <p class="text-[9px] text-gray-400 italic line-clamp-1">"{{ $p->alamat }}"</p>
+
+                            {{-- ALAMAT & KONTAK --}}
+                            <td class="px-6 py-5">
+                                <div class="flex flex-col gap-1">
+                                    <div class="flex items-center gap-1.5 text-slate-800">
+                                        <svg class="w-3.5 h-3.5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                        <p class="text-[13px] font-black">{{ $p->no_hp }}</p>
+                                    </div>
+                                    <p class="text-xs text-slate-500 font-medium leading-relaxed line-clamp-2 max-w-[200px]">
+                                        {{ $p->alamat }}
+                                    </p>
+                                </div>
                             </td>
-                            <td class="px-6 py-4">
+
+                            {{-- PERAN --}}
+                            <td class="px-6 py-5">
                                 @if($idKelompok)
                                     @if($p->id_pesertaarisan == ($p->kelompok->id_ketua_peserta ?? 0))
-                                        <span class="text-[10px] font-black text-green-600 uppercase tracking-tighter">★ Ketua Kelompok</span>
+                                        <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-700 rounded-lg border border-amber-100">
+                                            <span class="text-[10px] font-black uppercase tracking-tight">★ Ketua Kelompok</span>
+                                        </div>
                                     @else
-                                        <span class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Anggota</span>
+                                        <span class="text-xs font-bold text-slate-600 uppercase tracking-tight ml-2">Anggota</span>
                                     @endif
                                 @else
-                                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Individu</span>
+                                    <span class="text-xs font-bold text-slate-400 uppercase tracking-widest ml-2">Individu</span>
                                 @endif
                             </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="px-3 py-1 text-[9px] font-black rounded-full border-2 {{ $p->user->status == 'aktif' ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-red-50 text-red-600 border-red-100' }}">
+
+                            {{-- STATUS --}}
+                            <td class="px-6 py-5 text-center">
+                                <span class="px-4 py-1.5 text-[10px] font-black rounded-xl border-2 shadow-sm transition-all
+                                    {{ $p->user->status == 'aktif' 
+                                        ? 'bg-green-500/10 text-green-700 border-green-200/50' 
+                                        : 'bg-red-500/10 text-red-700 border-red-200/50' }}">
                                     {{ strtoupper($p->user->status) }}
                                 </span>
                             </td>
-                            <td class="px-8 py-4 text-center">
-                                <div class="flex justify-center gap-2">
-                                    <a href="{{ route('admin.peserta.show', $p->id_pesertaarisan) }}" class="p-2 bg-blue-50 text-blue-500 rounded-lg hover:bg-blue-500 hover:text-white transition-all active:scale-90 shadow-sm" title="Detail">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+
+                            {{-- TINDAKAN --}}
+                            <td class="px-8 py-5 text-center">
+                                <div class="flex justify-center gap-3">
+                                    <a href="{{ route('admin.peserta.show', $p->id_pesertaarisan) }}" class="p-2.5 bg-white border border-gray-100 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all shadow-sm active:scale-90" title="Detail">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                                     </a>
-                                    <a href="{{ route('admin.peserta.edit', $p->id_pesertaarisan) }}" class="p-2 bg-orange-50 text-orange-500 rounded-lg hover:bg-orange-500 hover:text-white transition-all active:scale-90 shadow-sm" title="Edit">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                                    <a href="{{ route('admin.peserta.edit', $p->id_pesertaarisan) }}" class="p-2.5 bg-white border border-gray-100 text-orange-500 rounded-xl hover:bg-orange-500 hover:text-white hover:border-orange-500 transition-all shadow-sm active:scale-90" title="Edit">
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                                     </a>
                                     <form id="delete-form-{{ $p->id_pesertaarisan }}" action="{{ route('admin.peserta.destroy', $p->id_pesertaarisan) }}" method="POST" class="inline">
                                         @csrf @method('DELETE')

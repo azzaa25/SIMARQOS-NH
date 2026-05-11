@@ -8,15 +8,39 @@
     </div>
 
     <div class="space-y-4">
-        @forelse($tagihans as $tagihan)
+        @php
+            // Memastikan locale Carbon adalah Indonesia
+            \Carbon\Carbon::setLocale('id');
+
+            $tagihansTerurut = $tagihans->sortByDesc(function($item) {
+                return \Carbon\Carbon::parse('01 ' . $item->bulan_iuran);
+            });
+        @endphp
+
+        @forelse($tagihansTerurut as $tagihan)
         <div class="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm flex flex-col md:flex-row justify-between items-center transition-all hover:shadow-md">
             <div class="flex items-center gap-5">
-                <div class="w-12 h-12 bg-green-50 text-green-700 rounded-2xl flex items-center justify-center font-black">
-                    {{ substr($tagihan->bulan_iuran, 0, 3) }}
+                @php
+                    try {
+                        // Parse string bulan iuran
+                        $dateObj = \Carbon\Carbon::parse('01 ' . $tagihan->bulan_iuran);
+                        
+                        // translatedFormat akan mengikuti setLocale('id') di atas
+                        $bulanIndo = $dateObj->translatedFormat('F Y'); // Contoh: Maret 2026
+                        $inisialBulan = $dateObj->translatedFormat('M'); // Contoh: Mar
+                    } catch (\Exception $e) {
+                        $bulanIndo = $tagihan->bulan_iuran;
+                        $inisialBulan = substr($tagihan->bulan_iuran, 0, 3);
+                    }
+                @endphp
+                
+                <div class="w-12 h-12 bg-green-50 text-green-700 rounded-2xl flex items-center justify-center font-black uppercase text-[10px]">
+                    {{ $inisialBulan }}
                 </div>
                 <div>
                     <p class="text-[10px] font-black text-gray-400 uppercase tracking-widest">{{ $tagihan->order_id }}</p>
-                    <h3 class="font-bold text-slate-800">{{ $tagihan->bulan_iuran }}</h3>
+                    {{-- Menggunakan capitalize agar rapi --}}
+                    <h3 class="font-bold text-slate-800 capitalize">{{ $bulanIndo }}</h3>
                     <p class="text-sm font-black text-green-700">Rp {{ number_format($tagihan->nominal, 0, ',', '.') }}</p>
                 </div>
             </div>
@@ -26,7 +50,7 @@
                     <span class="px-6 py-2 bg-green-100 text-green-600 rounded-full text-[10px] font-black uppercase tracking-widest">Lunas</span>
                 @else
                     <button id="pay-button-{{ $tagihan->id_transaksi }}" onclick="payNow({{ $tagihan->id_transaksi }})" 
-                        class="bg-green-800 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-900/20 disabled:bg-gray-400 disabled:cursor-not-allowed">
+                        class="bg-green-800 text-white px-8 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-green-700 transition-all shadow-lg shadow-green-900/20">
                         Bayar Sekarang
                     </button>
                 @endif

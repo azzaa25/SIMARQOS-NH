@@ -21,9 +21,8 @@ class KegiatanSosialPesertaController extends Controller
         
         // Ambil agenda yang masih aktif (belum selesai)
         $agendas = KegiatanSosial::with('kategori')
-                    ->where('status_kegiatan', '!=', 'selesai')
-                    ->latest()
-                    ->paginate(6);
+                ->latest()
+                ->paginate(6);
 
         return view('peserta.sosial.index', compact('agendas', 'kategori'));
     }

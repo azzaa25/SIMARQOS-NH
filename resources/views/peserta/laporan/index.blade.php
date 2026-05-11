@@ -33,13 +33,11 @@
         <svg class="absolute -right-4 -bottom-4 w-24 h-24 text-white/5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.82v-1.91c-1.84-.25-3.28-1.23-3.97-2.73l1.79-.77c.44 1.13 1.49 1.95 2.68 2.13v-3.72l-2.72-.68c-1.81-.46-3.13-1.55-3.13-3.41 0-1.74 1.34-3.07 3.13-3.44V4h2.82v1.94c1.39.21 2.53.94 3.19 2.05l-1.68.86c-.36-.78-1.03-1.24-1.96-1.39v3.42l2.72.68c1.81.46 3.13 1.55 3.13 3.41 0 1.76-1.34 3.12-3.13 3.44z"/></svg>
     </div>
 
-    {{-- Card 2: Sisa Tanggung Jawab (Dinamis Berdasarkan Tipe) --}}
+    {{-- Card 2: Sisa Tanggung Jawab --}}
     <div class="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden">
         @if($skema->tipe_skema == 'kelompok')
-            {{-- Tampilan KHUSUS Kelompok --}}
             <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Sisa Kas Kelompok</p>
             <h2 class="text-2xl font-black text-gray-800">Rp {{ number_format($sisaTagihan, 0, ',', '.') }}</h2>
-            
             <div class="mt-4">
                 <div class="flex justify-between text-[9px] font-bold mb-1">
                     <span class="text-gray-400 uppercase">Progres Dana Kelompok</span>
@@ -53,10 +51,8 @@
                 </p>
             </div>
         @else
-            {{-- Tampilan KHUSUS Individu --}}
             <p class="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Sisa Komitmen Pribadi</p>
             <h2 class="text-2xl font-black text-gray-800">Rp {{ number_format($sisaTagihan, 0, ',', '.') }}</h2>
-            
             <div class="mt-4">
                 <div class="flex justify-between text-[9px] font-bold mb-1">
                     <span class="text-gray-400 uppercase">Progres Tabungan Saya</span>
@@ -72,7 +68,7 @@
         @endif
     </div>
 
-    {{-- Card 3: Tagihan Pending (Pribadi) --}}
+    {{-- Card 3: Tagihan Pending --}}
     <div class="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 relative overflow-hidden">
         <p class="text-[10px] font-bold uppercase tracking-widest text-orange-400 mb-1">Tagihan Saya (Pending)</p>
         <h2 class="text-2xl font-black text-orange-600">Rp {{ number_format($totalPending, 0, ',', '.') }}</h2>
@@ -81,21 +77,6 @@
         </a>
     </div>
 </div>
-
-{{-- Info Box Khusus Kelompok --}}
-@if($skema->tipe_skema == 'kelompok')
-<div class="mb-8 p-5 bg-blue-50 border border-blue-100 rounded-3xl flex items-start gap-4">
-    <div class="p-2 bg-blue-500 rounded-xl text-white shrink-0">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-    </div>
-    <div>
-        <h4 class="text-sm font-bold text-blue-900">Catatan Arisan Kelompok</h4>
-        <p class="text-xs text-blue-700 leading-relaxed mt-1">
-            Sisa Kas Kelompok di atas adalah total kekurangan iuran dari <strong>seluruh anggota kelompok</strong>. Angka ini akan terus berkurang secara otomatis setiap kali ada anggota kelompok yang melakukan pembayaran sukses.
-        </p>
-    </div>
-</div>
-@endif
 
 {{-- Tabel Riwayat --}}
 <div class="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden">
@@ -117,10 +98,24 @@
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-50">
-                @forelse($transaksi as $t)
+                @php
+                    // Pastikan locale Indonesia
+                    \Carbon\Carbon::setLocale('id');
+
+                    // Mengurutkan dari terbaru ke terlama berdasarkan string bulan_iuran
+                    $transaksiTerurut = $transaksi->sortByDesc(function($t) {
+                        return \Carbon\Carbon::parse('01 ' . $t->bulan_iuran);
+                    });
+                @endphp
+
+                @forelse($transaksiTerurut as $t)
                 <tr class="hover:bg-gray-50/50 transition-colors">
                     <td class="px-6 py-4">
-                        <p class="text-sm font-bold text-gray-700">{{ \Carbon\Carbon::parse($t->bulan_iuran)->translatedFormat('F Y') }}</p>
+                        @php
+                            // Format nama bulan ke Bahasa Indonesia
+                            $periodeIndo = \Carbon\Carbon::parse('01 ' . $t->bulan_iuran)->translatedFormat('F Y');
+                        @endphp
+                        <p class="text-sm font-bold text-gray-700 capitalize">{{ $periodeIndo }}</p>
                         <p class="text-[10px] text-gray-400 font-mono">{{ $t->id_transaksi }}</p>
                     </td>
                     <td class="px-6 py-4 text-center">

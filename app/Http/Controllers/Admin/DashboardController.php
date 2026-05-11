@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\PesertaArisan;
+use App\Models\User;
 use App\Models\SkemaArisan;
 use App\Models\TransaksiPembayaran;
 use App\Models\KegiatanSosial;
@@ -16,7 +17,9 @@ class DashboardController extends Controller
     public function index()
     {
         // 1. Statistik Dasar
-        $totalPeserta = PesertaArisan::count();
+        $totalPeserta = PesertaArisan::whereHas('user', function($query) {
+            $query->where('status', 'aktif');
+        })->count();
         $totalSkema = SkemaArisan::count();
         
         // 2. LOGIKA SISA SALDO KAS (Iuran Masuk - Pengeluaran Keluar)

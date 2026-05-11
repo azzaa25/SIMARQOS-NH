@@ -11,6 +11,7 @@ class UserApprovalController extends Controller
     {
         $users = User::where('role', 'peserta')
                     ->where('status', 'pending')
+                    ->with(['peserta.skemaArisan'])
                     ->latest()
                     ->get();
 

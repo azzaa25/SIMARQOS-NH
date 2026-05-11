@@ -98,6 +98,7 @@ Route::middleware(['auth', 'role:admin'])
             Route::get('/laporan', [KegiatanSosialController::class, 'laporan'])->name('laporan');
             Route::get('/laporan/pdf/{id}', [KegiatanSosialController::class, 'exportPdf'])->name('laporan.pdf');
             Route::post('/upload-dokumentasi/{id}', [KegiatanSosialController::class, 'uploadDokumentasi'])->name('upload_dokumentasi');
+            Route::get('/show/{id}', [KegiatanSosialController::class, 'show'])->name('show');
         });
         // PENGELUARAN ARISAN ROUTES
         Route::prefix('pengeluaran')->as('pengeluaran.')->group(function () {

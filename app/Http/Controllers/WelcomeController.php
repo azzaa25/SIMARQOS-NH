@@ -11,7 +11,9 @@ class WelcomeController extends Controller
 {
     public function index() {
         // Menghitung total peserta arisan yang status USER-nya aktif
-        $totalPeserta = \App\Models\PesertaArisan::count();
+        $totalPeserta = \App\Models\PesertaArisan::whereHas('user', function($query) {
+            $query->where('status', 'aktif');
+        })->count();
         // Ambil kegiatan yang belum selesai untuk ditampilkan di hero/slider (opsional)
         $kegiatan = KegiatanSosial::with('kategori')
                     ->where('status_kegiatan', '!=', 'selesai')

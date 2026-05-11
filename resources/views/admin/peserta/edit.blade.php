@@ -87,12 +87,17 @@
                         <div class="space-y-1">
                             <label class="block text-[10px] font-black text-gray-400 uppercase ml-1">Status Kepesertaan</label>
                             <div class="grid grid-cols-2 gap-3 p-1">
-                                <label class="relative flex items-center justify-center py-2 px-4 border border-gray-100 rounded-xl cursor-pointer group hover:bg-red-50 transition-all has-[:checked]:bg-red-50 has-[:checked]:border-red-200">
-                                    <input type="radio" name="status" value="nonaktif" {{ old('status', $peserta->status) == 'nonaktif' ? 'checked' : '' }} class="sr-only">
+                                {{-- Opsi Nonaktif --}}
+                                <label class="relative flex items-center justify-center py-2 px-4 border border-gray-100 rounded-xl cursor-pointer group hover:bg-red-100 transition-all has-[:checked]:bg-red-100 has-[:checked]:border-red-200">
+                                    <input type="radio" name="status" value="nonaktif" 
+                                        {{ old('status', $peserta->user->status ?? 'nonaktif') == 'nonaktif' ? 'checked' : '' }} class="sr-only">
                                     <span class="text-[11px] font-black text-gray-400 group-hover:text-red-600 group-[.has-[:checked]]:text-red-600 tracking-widest">NONAKTIF</span>
                                 </label>
-                                <label class="relative flex items-center justify-center py-2 px-4 border border-gray-100 rounded-xl cursor-pointer group hover:bg-green-50 transition-all has-[:checked]:bg-green-50 has-[:checked]:border-green-200">
-                                    <input type="radio" name="status" value="aktif" {{ old('status', $peserta->status) == 'aktif' ? 'checked' : '' }} class="sr-only">
+
+                                {{-- Opsi Aktif --}}
+                                <label class="relative flex items-center justify-center py-2 px-4 border border-gray-100 rounded-xl cursor-pointer group hover:bg-green-200 transition-all has-[:checked]:bg-green-200 has-[:checked]:border-green-200">
+                                    <input type="radio" name="status" value="aktif" 
+                                        {{ old('status', $peserta->user->status ?? 'aktif') == 'aktif' ? 'checked' : '' }} class="sr-only">
                                     <span class="text-[11px] font-black text-gray-400 group-hover:text-green-700 group-[.has-[:checked]]:text-green-700 tracking-widest">AKTIF</span>
                                 </label>
                             </div>
@@ -118,6 +123,18 @@
 </div>
 
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        @if ($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Update Gagal',
+                text: 'Nama atau Nomor HP sudah digunakan oleh peserta lain. Mohon periksa kembali.',
+                confirmButtonColor: '#147a54',
+                customClass: { popup: 'rounded-[32px]' }
+            });
+        @endif
+    });
+
     function confirmUpdate() {
         Swal.fire({
             title: 'Simpan Perubahan?',

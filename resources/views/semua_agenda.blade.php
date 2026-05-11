@@ -105,11 +105,12 @@
                                 
                                 @php
                                     $danaMasuk = \App\Models\DanaSosial::where('id_kegiatan', $agenda->id_kegiatan)
+                                                ->where('tipe_dana', 'masuk') // Filter hanya dana masuk
                                                 ->whereIn('status_pembayaran', ['success', 'settlement'])
                                                 ->sum('nominal');
+                                    
                                     $persen = $agenda->target_donasi > 0 ? min(($danaMasuk / $agenda->target_donasi) * 100, 100) : 0;
                                 @endphp
-
                                 <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 group-hover:bg-green-50 group-hover:border-green-100 transition-colors">
                                     <div class="flex justify-between items-center text-[9px] font-black uppercase tracking-widest mb-2">
                                         <span class="text-slate-400">Pencapaian</span>
