@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TransaksiPembayaran;
 use App\Models\PesertaArisan;
 use App\Models\SkemaArisan;
-use Illuminate\Http\Request; 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -19,114 +19,65 @@ class TransaksiAdminController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Ambil input filter dari dropdown
-        $bulanFilter = $request->get('bulan');
-        $tahunFilter = $request->get('tahun');
+        $bulanFilter = $request->filled('bulan') ? (int)$request->get('bulan') : null;
+        $tahunFilter = $request->filled('tahun') ? (int)$request->get('tahun') : null;
+        $skemaFilter = $request->get('skema'); 
 
         $query = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok']);
 
-        // 2. LOGIKA FILTER: Mencocokkan dengan kolom 'bulan_iuran' (Bahasa Inggris)
         if ($bulanFilter && $tahunFilter) {
-            // Pastikan $bulanFilter adalah integer
-            $bulanAngka = (int)$bulanFilter; 
-            
-            // Paksa locale 'en' agar format 'F' menghasilkan "January", "February", dst.
-            $namaBulanInggris = Carbon::createFromDate($tahunFilter, $bulanAngka, 1)
-                                ->locale('en')
-                                ->format('F');
-                                
-            $stringCari = $namaBulanInggris . ' ' . $tahunFilter; // Hasil: "January 2026"
-
-            $query->where('bulan_iuran', $stringCari);
+            $namaBulanInggris = Carbon::createFromDate($tahunFilter, $bulanFilter, 1)->locale('en')->format('F');
+            $query->where('bulan_iuran', $namaBulanInggris . ' ' . $tahunFilter);
         }
 
-        $transaksi = $query->latest()->get();
-
-        // ================= TAMBAHAN FILTER UNTUK STATISTIK =================
-        if ($bulanFilter && $tahunFilter) {
-
-            $start = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)
-                        ->subMonths(5)
-                        ->startOfMonth();
-
-            $end = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)
-                        ->endOfMonth();
-
-        } else {
-
-            $start = Carbon::now()->subMonths(5)->startOfMonth();
-            $end   = Carbon::now()->endOfMonth();
+        if ($skemaFilter) {
+            $query->whereHas('peserta', fn($q) => $q->where('id_skema', $skemaFilter));
         }
 
-        // Query khusus statistik (tidak ganggu query utama)
-        $statistikQuery = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->whereBetween('created_at', [$start, $end]);
+        $transaksi = $query->latest()->paginate(30)->withQueryString();
 
-        // --- Statistik tetap Global agar saldo ID 8-52 tetap terhitung ---
-        $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
+        // ── STATISTIK ──
         
-        $totalTunai = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->where('metode_pembayaran', 'Tunai')
-            ->sum('nominal');
+        // 1. Total Kas Global (Tetap ada untuk melihat total uang masjid)
+        $totalKas = TransaksiPembayaran::where('status_pembayaran', 'sukses')->sum('nominal');
 
-        $totalTransfer = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->where('metode_pembayaran', '!=', 'Tunai')
-            ->sum('nominal');
-
-        $rataRata = $transaksi->where('status_pembayaran', 'sukses')->avg('nominal') ?? 0;
-
-        $tunggakan = TransaksiPembayaran::with(['peserta.skemaArisan', 'peserta.kelompok'])
-            ->where('status_pembayaran', 'pending')
-            ->orderBy('created_at', 'asc')
-            ->get();
-
-        // Data lainnya...
-        $totalPeserta = PesertaArisan::whereHas('user', function ($q) {
-            $q->whereIn('status', ['aktif', 'nonaktif']);
-        })->count();
-
-        $metodeFavorit = TransaksiPembayaran::where('status_pembayaran', 'sukses')
-            ->select('metode_pembayaran', DB::raw('count(*) as total'))
-            ->groupBy('metode_pembayaran')
-            ->orderBy('total', 'desc')
-            ->first();
-
-        // ================= GRAFIK BERDASARKAN FILTER =================
-        $grafikBulanan = $statistikQuery
-            ->select(
-                DB::raw('SUM(nominal) as total'),
-                DB::raw('DATE_FORMAT(created_at, "%Y-%m") as bulan')
-            )
-            ->groupBy('bulan')
-            ->orderBy('bulan', 'asc')
-            ->pluck('total', 'bulan');
-
-        $periode = collect();
-        $startLoop = $start->copy();
-
-        for ($i = 0; $i < 6; $i++) {
-            $key = $startLoop->format('Y-m');
-            $periode[$key] = $grafikBulanan[$key] ?? 0;
-            $startLoop->addMonth();
+        // 2. Buat Query Statistik yang ikut filter
+        $statsQuery = TransaksiPembayaran::where('status_pembayaran', 'sukses');
+        if ($bulanFilter && $tahunFilter) {
+            $namaBulanInggris = Carbon::createFromDate($tahunFilter, $bulanFilter, 1)->locale('en')->format('F');
+            $statsQuery->where('bulan_iuran', $namaBulanInggris . ' ' . $tahunFilter);
+        }
+        if ($skemaFilter) {
+            $statsQuery->whereHas('peserta', fn($q) => $q->where('id_skema', $skemaFilter));
         }
 
-        $grafikBulanan = $periode;
+        // Ambil Data Berdasarkan Filter
+        $totalTunai    = (clone $statsQuery)->where('metode_pembayaran', 'Tunai')->sum('nominal');
+        $totalTransfer = (clone $statsQuery)->where('metode_pembayaran', '!=', 'Tunai')->sum('nominal');
+        
+        // 🌟 INI TOTAL DINAMIS (Penjumlahan Tunai + Transfer periode tersebut)
+        $totalPeriode  = $totalTunai + $totalTransfer;
+
+        // Tunggakan (juga ikut skema filter jika ada)
+        $tunggakanQuery = TransaksiPembayaran::where('status_pembayaran', 'pending');
+        if ($skemaFilter) {
+            $tunggakanQuery->whereHas('peserta', fn($q) => $q->where('id_skema', $skemaFilter));
+        }
+        $tunggakan = $tunggakanQuery->get();
 
         return view('admin.transaksi.index', compact(
-            'transaksi', 'tunggakan', 'totalPeserta', 'totalKas', 
-            'totalTunai', 'totalTransfer', 'rataRata', 'metodeFavorit', 'grafikBulanan'
+            'transaksi', 'tunggakan', 'totalKas', 'totalPeriode', 'totalTunai', 'totalTransfer'
         ));
     }
+
+    // ──────────────────────────────────────────────────────────────
+    // CALLBACK MIDTRANS
+    // ──────────────────────────────────────────────────────────────
     public function callback(Request $request)
     {
         $serverKey = config('services.midtrans.serverKey');
-
-        $hashed = hash(
-            "sha512",
-            $request->order_id .
-            $request->status_code .
-            $request->gross_amount .
-            $serverKey
+        $hashed = hash('sha512',
+            $request->order_id . $request->status_code . $request->gross_amount . $serverKey
         );
 
         if ($hashed != $request->signature_key) {
@@ -134,64 +85,38 @@ class TransaksiAdminController extends Controller
         }
 
         $orderId = $request->order_id;
-        $status = $request->transaction_status;
+        $status  = $request->transaction_status;
 
-        /*
-        ======================================
-        TRANSAKSI ARISAN (Prefix: INV)
-        ======================================
-        */
         if (str_starts_with($orderId, 'INV')) {
-            if ($status == 'capture' || $status == 'settlement') {
-                $transaksi = TransaksiPembayaran::where('order_id', $orderId)->first();
-                if ($transaksi) {
-                    $transaksi->update([
-                        'status_pembayaran' => 'sukses',
-                        'metode_pembayaran' => $request->payment_type,
-                    ]);
-                }
+            if (in_array($status, ['capture', 'settlement'])) {
+                TransaksiPembayaran::where('order_id', $orderId)->first()?->update([
+                    'status_pembayaran' => 'sukses',
+                    'metode_pembayaran' => $request->payment_type,
+                ]);
             }
-        }
-
-        /*
-        ======================================
-        TRANSAKSI DONASI (Prefix: DONASI)
-        ======================================
-        */
-        elseif (str_starts_with($orderId, 'DONASI')) {
-            if ($status == 'capture' || $status == 'settlement') {
+        } elseif (str_starts_with($orderId, 'DONASI')) {
+            if (in_array($status, ['capture', 'settlement'])) {
                 try {
-                    // Ambil Metadata dari Midtrans
-                    $metadata = $request->metadata;
-                    
-                    // Jika metadata berbentuk string JSON (sering terjadi di Midtrans), kita decode
-                    if (is_string($metadata)) {
-                        $metadata = json_decode($metadata, true);
-                    }
+                    $metadata = is_string($request->metadata)
+                        ? json_decode($request->metadata, true)
+                        : $request->metadata;
 
-                    $namaDonatur = $metadata['nama_donatur'] ?? 'Hamba Allah';
-                    $idKegiatan  = $metadata['id_kegiatan'] ?? null;
-                    $keterangan  = $metadata['keterangan'] ?? 'Donasi Online';
-
-                    // Simpan ke tabel dana_sosial
                     DB::table('dana_sosial')->updateOrInsert(
                         ['order_id' => $orderId],
                         [
-                            'nama_donatur'         => $namaDonatur,
-                            'id_kegiatan'          => $idKegiatan,
+                            'nama_donatur'         => $metadata['nama_donatur'] ?? 'Hamba Allah',
+                            'id_kegiatan'          => $metadata['id_kegiatan'] ?? null,
                             'tipe_dana'            => 'masuk',
                             'nominal'              => $request->gross_amount,
                             'metode_pembayaran'    => $request->payment_type,
                             'status_pembayaran'    => 'success',
-                            'keterangan_transaksi' => $keterangan,
+                            'keterangan_transaksi' => $metadata['keterangan'] ?? 'Donasi Online',
                             'tanggal_input'        => now(),
                         ]
                     );
-
-                    \Log::info("Callback Donasi Berhasil: " . $orderId);
-
+                    \Log::info("Callback Donasi Berhasil: $orderId");
                 } catch (\Exception $e) {
-                    \Log::error('Gagal simpan donasi di Callback: ' . $e->getMessage());
+                    \Log::error('Gagal simpan donasi: ' . $e->getMessage());
                 }
             }
         }
@@ -199,91 +124,99 @@ class TransaksiAdminController extends Controller
         return response()->json(['status' => 'OK']);
     }
 
-    /**
-     * Fungsi Inti: Generate Tagihan (Manual & Otomatis)
-     */
+    // ──────────────────────────────────────────────────────────────
+    // GENERATE TAGIHAN BULANAN (ADAPTIF TERHADAP LOGIKA BACK-COUNTING)
+    // ──────────────────────────────────────────────────────────────
     public function generateTagihan(Request $request = null)
     {
         try {
-            $pesertas = PesertaArisan::whereHas('user', function($q) {
-                    $q->where('status', 'aktif');
-                })
-                ->with(['skemaArisan', 'undian', 'transaksi' => function($q) {
-                    // Filter ini tetap dipakai untuk keperluan "Auto-Nonaktif" (hanya yang sudah bayar lunas)
-                    $q->where('status_pembayaran', 'sukses');
-                }])->get();
+            // Ambil semua peserta dengan user yang berstatus aktif
+            $pesertas = PesertaArisan::whereHas('user', fn($q) => $q->where('status', 'aktif'))
+                ->with(['skemaArisan', 'undian', 'transaksi'])
+                ->get();
 
             $bulanIni = Carbon::now()->translatedFormat('F Y');
             $count = 0;
-            $daftarNama = []; 
+            $daftarNama = [];
+
+            // Peta Bulan Idul Adha Konvensional
+            $petaIdulAdha = [
+                2026 => 5, 2027 => 5, 2028 => 4, 2029 => 4, 2030 => 3
+            ];
 
             foreach ($pesertas as $p) {
-                if (!$p->skemaArisan) continue;
+                if (!$p->skemaArisan || !$p->tahun_periode) continue;
 
-                // --- PERBAIKAN LOGIKA TENOR ---
+                $tenor = (int)$p->skemaArisan->durasi_bulan; // 12 atau 36
                 
-                // 1. Hitung TOTAL RECORD tagihan yang pernah dibuat (Sukses, Pending, Gagal semuanya dihitung)
-                $totalTagihanPernahDibuat = \App\Models\TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)->count();
-                $tenorSkema = $p->skemaArisan->durasi_bulan; // Misal: 12
-                // 2. Jika jumlah tagihan yang ada sudah mencapai atau melebihi tenor skema
-                if ($totalTagihanPernahDibuat >= $tenorSkema) {
-                    // Cek apakah dia benar-benar sudah lunas (untuk mematikan status user)
-                    $jumlahCicilanLunas = $p->transaksi->count(); // Mengambil data 'sukses' dari eager loading
-                    if ($jumlahCicilanLunas >= $tenorSkema && $p->undian) {
-                        // Jika sudah lunas 12x DAN sudah menang, nonaktifkan agar tidak masuk query bulan depan
-                        if ($p->user) {
-                            $p->user->update(['status' => 'nonaktif']);
-                        }
-                    }
+                // 1. Hitung rentang iuran valid berdasarkan tahun_periode peserta
+                $tahunTarget = (int)$p->tahun_periode;
+                $bulanIdulAdha = $petaIdulAdha[$tahunTarget] ?? 5;
+                $bulanLunas = $bulanIdulAdha - 1;
+
+                $tanggalJatuhTempoAkhir = Carbon::create($tahunTarget, $bulanLunas, 1);
+                $tanggalMulaiTagihan = $tanggalJatuhTempoAkhir->copy()->subMonths($tenor - 1);
+                $tanggalSelesaiTagihan = $tanggalJatuhTempoAkhir->copy();
+
+                // 2. Batasan Proteksi: Jika bulan berjalan saat ini di luar timeline iuran peserta, LEWATI
+                if (Carbon::now()->startOfMonth()->lessThan($tanggalMulaiTagihan->startOfMonth()) || 
+                    Carbon::now()->startOfMonth()->greaterThan($tanggalSelesaiTagihan->startOfMonth())) {
                     
-                    // Loncat ke peserta berikutnya, JANGAN buatkan tagihan baru
-                    continue; 
+                    // Kondisi Tambahan: Jika waktu iurannya sudah lewat dan dia lunas + menang undian, nonaktifkan akun
+                    $totalLunas = $p->transaksi->where('status_pembayaran', 'sukses')->count();
+                    if ($totalLunas >= $tenor && $p->undian && $p->user) {
+                        $p->user->update(['status' => 'nonaktif']);
+                    }
+                    continue;
                 }
 
-                // 3. CEK APAKAH TAGIHAN BULAN INI SUDAH ADA (Double Check agar tidak duplikat di bulan yang sama)
+                // 3. Cek total baris tagihan yang sudah diterbitkan untuk peserta ini
+                $totalTagihanTerbit = $p->transaksi->count();
+                if ($totalTagihanTerbit >= $tenor) {
+                    continue; // Stop generate jika kuota baris tagihan skema sudah terpenuhi
+                }
+
+                // 4. Cek apakah tagihan bulan ini sudah pernah diterbitkan sebelumnya
                 $exists = TransaksiPembayaran::where('id_pesertaarisan', $p->id_pesertaarisan)
-                                ->where('bulan_iuran', $bulanIni)
-                                ->exists();
+                    ->where('bulan_iuran', $bulanIni)
+                    ->exists();
 
                 if (!$exists) {
-                    $nominalSkema = $p->skemaArisan->nominal_iuran;
-                    $nominalFinal = ($p->id_kelompok != null) ? ceil($nominalSkema / 7) : $nominalSkema;
+                    // Hitung nominal (jika kelompok, nominal iuran dibagi 7)
+                    $nominalFinal = ($p->id_kelompok != null)
+                        ? ceil($p->skemaArisan->nominal_iuran / 7)
+                        : $p->skemaArisan->nominal_iuran;
 
                     TransaksiPembayaran::create([
                         'id_pesertaarisan' => $p->id_pesertaarisan,
-                        'order_id' => 'INV-' . strtoupper(bin2hex(random_bytes(3))) . '-' . $p->id_pesertaarisan,
-                        'nominal' => $nominalFinal,
-                        'bulan_iuran' => $bulanIni,
-                        'status_pembayaran' => 'pending'
+                        'order_id'         => 'INV-' . strtoupper(bin2hex(random_bytes(3))) . '-' . $p->id_pesertaarisan,
+                        'nominal'          => $nominalFinal,
+                        'bulan_iuran'      => $bulanIni,
+                        'status_pembayaran'=> 'pending',
                     ]);
-                    
-                    $daftarNama[] = $p->nama; 
+
+                    $daftarNama[] = $p->nama;
                     $count++;
                 }
             }
 
-            // --- LOGIKA KIRIM WHATSAPP ---
+            // ── KIRIM NOTIFIKASI WA GRUP JIKA ADA TAGIHAN BARU TERBIT ──
             if ($count > 0) {
-                $pesanWA = "🔔 *PEMBERITAHUAN TAGIHAN ARISAN*\n";
-                $pesanWA .= "Periode: *" . $bulanIni . "*\n\n";
-                $pesanWA .= "Assalamu'alaikum Wr. Wb.\nMohon perhatian Bapak/Ibu, tagihan arisan bulan ini telah diterbitkan untuk:\n\n";
-                
-                $limit = 10;
-                foreach (array_slice($daftarNama, 0, $limit) as $index => $nama) {
-                    $pesanWA .= ($index + 1) . ". " . $nama . "\n";
+                $pesanWA  = "🔔 *PEMBERITAHUAN TAGIHAN ARISAN*\n";
+                $pesanWA .= "Periode: *$bulanIni*\n\n";
+                $pesanWA .= "Assalamu'alaikum Wr. Wb.\nTagihan arisan bulan ini telah diterbitkan untuk:\n\n";
+                foreach (array_slice($daftarNama, 0, 10) as $i => $nama) {
+                    $pesanWA .= ($i + 1) . ". $nama\n";
                 }
-
-                if (count($daftarNama) > $limit) {
-                    $pesanWA .= "...dan " . (count($daftarNama) - $limit) . " peserta lainnya.\n";
+                if (count($daftarNama) > 10) {
+                    $pesanWA .= "...dan " . (count($daftarNama) - 10) . " peserta lainnya.\n";
                 }
-
-                $pesanWA .= "\nSilakan melakukan pembayaran melalui aplikasi atau setor tunai ke pengurus.\n";
-                $pesanWA .= "Terima kasih atas partisipasinya. 🙏";
+                $pesanWA .= "\nSilakan bayar melalui aplikasi atau setor tunai ke pengurus.\nTerima kasih. 🙏";
 
                 try {
-                    \Illuminate\Support\Facades\Http::post(env('WA_BOT_URL'), [
-                        'groupId' => env('WA_GROUP_ID'),
-                        'message' => $pesanWA
+                    Http::post(env('WA_BOT_URL'), [
+                        'target' => env('WA_GROUP_ID'),
+                        'message' => $pesanWA,
                     ]);
                 } catch (\Exception $waEx) {
                     \Log::error("Gagal kirim WA Tagihan: " . $waEx->getMessage());
@@ -292,24 +225,20 @@ class TransaksiAdminController extends Controller
 
             if (request()->wantsJson()) {
                 return response()->json([
-                    'status' => 'success',
-                    'message' => "Berhasil menerbitkan $count tagihan baru dan mengirim notifikasi."
+                    'status'  => 'success',
+                    'message' => "Berhasil menerbitkan $count tagihan baru untuk bulan ini.",
                 ]);
             }
 
-            return back()->with('success', "Tagihan berhasil dibuat dan notifikasi dikirim.");
+            return back()->with('success', "Berhasil memproses iuran bulanan. $count tagihan baru diterbitkan.");
 
         } catch (\Exception $e) {
             if (request()->wantsJson()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => "Gagal: " . $e->getMessage()
-                ], 500);
+                return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
             }
             return back()->with('error', $e->getMessage());
         }
     }
-    
     public function verifikasiManual($id)
     {
         $trx = TransaksiPembayaran::findOrFail($id);
@@ -321,106 +250,111 @@ class TransaksiAdminController extends Controller
         return back()->with('success', 'Pembayaran berhasil diverifikasi secara manual.');
     }
 
+    // ──────────────────────────────────────────────────────────────
+    // EXPORT PDF
+    // ──────────────────────────────────────────────────────────────
     public function exportPDF(Request $request)
     {
         $bulanFilter = $request->get('bulan');
         $tahunFilter = $request->get('tahun');
+        $skemaFilter = $request->get('skema'); // Ambil filter skema
 
-        $query = TransaksiPembayaran::with(['peserta.kelompok'])
+        // Query dasar: Hanya yang sukses
+        $query = TransaksiPembayaran::with(['peserta.kelompok', 'peserta.skemaArisan'])
                     ->where('status_pembayaran', 'sukses');
 
-        // Judul dinamis untuk di laporan
         $periodeTeks = "Semua Periode";
-
+        
+        // 1. Filter Bulan & Tahun
         if ($bulanFilter && $tahunFilter) {
-            $namaBulanInggris = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)->locale('en')->format('F');
-            $stringCari = $namaBulanInggris . ' ' . $tahunFilter;
-            $query->where('bulan_iuran', $stringCari);
+            $namaBulanInggris = \Carbon\Carbon::createFromDate((int)$tahunFilter, (int)$bulanFilter, 1)->locale('en')->format('F');
+            $query->where('bulan_iuran', $namaBulanInggris . ' ' . $tahunFilter);
             
-            // Buat teks untuk judul PDF dalam bahasa Indonesia
-            $namaBulanIndo = Carbon::createFromDate($tahunFilter, (int)$bulanFilter, 1)->translatedFormat('F');
-            $periodeTeks = $namaBulanIndo . ' ' . $tahunFilter;
+            $periodeTeks = \Carbon\Carbon::createFromDate((int)$tahunFilter, (int)$bulanFilter, 1)->translatedFormat('F Y');
         }
 
-        $allData = $query->latest()->get();
+        // 2. Filter Skema (Tambahan Baru)
+        if ($skemaFilter) {
+            $skema = \App\Models\SkemaArisan::find($skemaFilter);
+            if ($skema) {
+                $query->whereHas('peserta', function($q) use ($skemaFilter) {
+                    $q->where('id_skema', $skemaFilter);
+                });
+                // Tambahkan keterangan skema ke judul laporan
+                $periodeTeks .= " - Skema: " . $skema->nama_skema;
+            }
+        }
 
-        // Pisahkan data untuk mempermudah di view PDF
+        $allData      = $query->latest()->get();
         $dataKelompok = $allData->whereNotNull('peserta.id_kelompok')->groupBy('peserta.id_kelompok');
         $dataIndividu = $allData->whereNull('peserta.id_kelompok');
 
-        $pdf = Pdf::loadView('admin.transaksi.pdf', compact('dataKelompok', 'dataIndividu', 'periodeTeks'));
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('admin.transaksi.pdf', compact('dataKelompok', 'dataIndividu', 'periodeTeks'));
         
-        // Nama file jadi dinamis: laporan-januari-2026.pdf
-        $fileName = 'laporan-arisan-' . strtolower(str_replace(' ', '-', $periodeTeks)) . '.pdf';
-        
+        $fileName = 'laporan-arisan-' . \Str::slug($periodeTeks) . '.pdf';
         return $pdf->download($fileName);
     }
-   public function kirimTagihanWa()
+    public function kirimTagihanWaPersonal($id)
     {
         try {
-            $tunggakan = TransaksiPembayaran::with('peserta')
-                ->where('status_pembayaran', 'pending')
-                ->get()
-                ->groupBy('bulan_iuran');
+            // Cari data transaksi tunggakan spesifik beserta profil pesertanya
+            $item = TransaksiPembayaran::with(['peserta'])->findOrFail($id);
+            $peserta = $item->peserta;
 
-            if ($tunggakan->count() == 0) {
-                return back()->with('error', 'Tidak ada tunggakan.');
+            if ($item->status_pembayaran !== 'pending') {
+                return back()->with('error', 'Transaksi ini sudah lunas.');
             }
 
-            // 1. Pastikan Carbon menggunakan locale Indonesia
-            \Carbon\Carbon::setLocale('id');
-            $bulanSekarangIndo = \Carbon\Carbon::now()->translatedFormat('F Y'); 
-            
-            $pesanWA = "⚠️ *PENGINGAT IURAN ARISAN*\n";
-            $pesanWA .= "--------------------------------\n\n";
-
-            foreach ($tunggakan as $bulanDibuat => $daftarTrx) {
-                
-                // 2. Gunakan Carbon untuk memparsing string bulan dari database agar formatnya konsisten
-                // Misal $bulanDibuat isinya "May 2026" atau "Mei 2026"
-                try {
-                    $bulanIndo = \Carbon\Carbon::parse($bulanDibuat)->translatedFormat('F Y');
-                } catch (\Exception $e) {
-                    // Jika parsing gagal, gunakan replace manual Anda sebagai cadangan
-                    $bulanIndo = str_replace(
-                        ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
-                        ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'],
-                        $bulanDibuat
-                    );
-                }
-
-                $isBulanBerjalan = (trim($bulanIndo) === trim($bulanSekarangIndo));
-
-                $label = (!$isBulanBerjalan) ? "*PERIODE $bulanIndo (TUNGGAKAN LAMA)*" : "PERIODE $bulanIndo (TAGIHAN BARU)";
-                
-                $pesanWA .= "$label:\n";
-
-                foreach ($daftarTrx as $index => $item) {
-                    $nama = $item->peserta->nama;
-                    $nominal = number_format($item->nominal, 0, ',', '.');
-                    
-                    if (!$isBulanBerjalan) {
-                        $pesanWA .= ($index + 1) . ". *" . $nama . "* (Rp " . $nominal . ")\n";
-                    } else {
-                        $pesanWA .= ($index + 1) . ". " . $nama . " (Rp " . $nominal . ")\n";
-                    }
-                }
-                $pesanWA .= "\n"; 
+            if (!$peserta || !$peserta->no_hp) {
+                return back()->with('error', 'Nomor HP peserta tidak ditemukan.');
             }
 
-            $pesanWA .= "--------------------------------\n";
-            $pesanWA .= "Segera bayar via aplikasi atau tunai. Terima kasih. 🙏";
+            Carbon::setLocale('id');
 
-            // Kirim WA...
-            \Illuminate\Support\Facades\Http::post(env('WA_BOT_URL'), [
-                'groupId' => env('WA_GROUP_ID'),
-                'message' => $pesanWA
-            ]);
+            // 🛠️ PERBAIKAN 1: Ambil data bulan iuran dari database dan konversi ke Bahasa Indonesia
+            try {
+                $bulanIndo = Carbon::createFromFormat('F Y', $item->bulan_iuran)
+                                ->locale('id')
+                                ->translatedFormat('F Y');
+            } catch (\Exception $e) {
+                $bulanIndo = $item->bulan_iuran; // Fallback jika format string di DB berbeda
+            }
 
-            return back()->with('success', 'Notifikasi berhasil dikirim!');
+            $rawNoHp = $peserta->no_hp; 
+
+            // 🛠️ PERBAIKAN 2: Mengubah 'continue' menjadi 'return back' karena ini bukan di dalam perulangan loop
+            if (!$rawNoHp) {
+                return back()->with('error', 'Format nomor HP kosong.');
+            }
+
+            // Mengubah awalan 08xxx menjadi 628xxx agar dikenali server Node.js & WhatsApp
+            $noHp = preg_replace('/^0/', '62', trim($rawNoHp));
+
+            // Nominal iuran diformat rupiah
+            $nominal = number_format($item->nominal, 0, ',', '.');
+
+            // Susun Pesan Personal
+            $pesanWA  = "Assalamu'alaikum Wr. Wb. Bapak/Ibu *$peserta->nama*,\n\n";
+            $pesanWA .= "Kami dari *Pengurus Masjid Nurul Huda* menginfokan tagihan iuran arisan qurban yang belum lunas:\n\n";
+            $pesanWA .= "📌 Periode: *$bulanIndo*\n";
+            $pesanWA .= "💰 Nominal: *Rp $nominal*\n";
+            $pesanWA .= "Pembayaran dapat dilakukan melalui aplikasi atau setor tunai langsung ke pengurus.\n\n";
+            $pesanWA .= "Terima kasih atas partisipasinya. Semoga menjadi amal jariyah. 🙏";
+
+            // Kirim data ke Node.js Express Server
+            try {
+                Http::post(env('WA_BOT_URL'), [
+                    'target'  => $noHp,      // Mengirim nomor berawalan 62 (contoh: 6285336391316)
+                    'message' => $pesanWA,
+                ]);
+                return back()->with('success', "Notifikasi tagihan berhasil dikirim ke WhatsApp {$peserta->nama}!");
+            } catch (\Exception $waEx) {
+                \Log::error("Gagal kirim WA ke $noHp ($peserta->nama): " . $waEx->getMessage());
+                return back()->with('error', 'Gagal terhubung ke Server Bot Node.js.');
+            }
 
         } catch (\Exception $e) {
-            return back()->with('error', 'Gagal: ' . $e->getMessage());
+            return back()->with('error', 'Gagal memproses: ' . $e->getMessage());
         }
     }
 }

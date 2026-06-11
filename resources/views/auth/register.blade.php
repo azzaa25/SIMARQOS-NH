@@ -150,7 +150,28 @@
                     <select name="id_skema" required class="select-custom w-full px-3 py-2 bg-white border @error('id_skema') border-red-300 @else border-gray-200 @enderror rounded-xl focus:border-green-600 outline-none text-xs font-bold text-gray-700">
                         <option value="" disabled {{ old('id_skema') == '' ? 'selected' : '' }}>Pilih Skema Qurban</option>
                         @foreach ($skemas as $skema)
-                            <option value="{{ $skema->id_skema }}" {{ old('id_skema') == $skema->id_skema ? 'selected' : '' }}>{{ $skema->nama_skema }}</option>
+                            @php
+                                $isClosed = false;
+                                $keteranganTeks = "";
+
+                                // Deteksi otomatis jika tipenya 3 tahun
+                                if ((int)$skema->durasi_bulan == 36) {
+                                    // Berdasarkan info riil: Angkatan aktif targetnya 2027, mulai Mei 2024
+                                    $tanggalMulaiAngkatan = \Carbon\Carbon::create(2024, 5, 1)->startOfMonth();
+                                    
+                                    // Jika waktu sekarang sudah melewati bulan Mei 2024, maka pendaftaran dikunci
+                                    if (\Carbon\Carbon::now()->startOfMonth()->greaterThan($tanggalMulaiAngkatan)) {
+                                        $isClosed = true;
+                                        $keteranganTeks = " (Pendaftaran Ditutup - Siklus Berjalan)";
+                                    }
+                                }
+                            @endphp
+                            
+                            <option value="{{ $skema->id_skema }}" 
+                                {{ old('id_skema') == $skema->id_skema ? 'selected' : '' }}
+                                {{ $isClosed ? 'disabled class=text-gray-300' : '' }}>
+                                {{ $skema->nama_skema }}{{ $keteranganTeks }}
+                            </option>
                         @endforeach
                     </select>
                 </div>

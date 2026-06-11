@@ -19,15 +19,16 @@ class UndianArisanController extends Controller
     /**
      * Menampilkan Halaman Utama Undian
      */
-    public function index()
+    public function index(Request $request)
     {
         $skemas = SkemaArisan::all();
         
+        // 1. Pagination Tab Pemenang
         $undians = UndianArisan::with(['peserta.kelompok', 'skema'])
-                    ->orderBy('tahun_pelaksanaan', 'desc')
-                    ->orderBy('urutan_pemenang', 'asc')
-                    ->paginate(20);
-        
+                ->orderBy('tahun_pelaksanaan', 'desc')
+                ->orderBy('id_skema', 'asc')
+                ->orderBy('urutan_pemenang', 'asc')
+                ->paginate(20, ['*'], 'page_pemenang');
         // Statistik untuk Dashboard Undian
         $totalPeserta = PesertaArisan::whereHas('user', function($q) {
                             $q->where('status', 'aktif');
@@ -41,8 +42,32 @@ class UndianArisanController extends Controller
         $totalKeluar = PengeluaranArisan::sum('nominal');
         $saldoKasGlobal = $totalMasuk - $totalKeluar;
 
+        $sudahMenangIds = UndianArisan::pluck('id_pesertaarisan')->toArray();
+
+        // 2. Query Tab Antrean Peserta Aktif (Server-Side Filter)
+        $queryAntrean = PesertaArisan::with(['kelompok', 'skemaArisan'])
+            ->whereHas('user', function($q){
+                $q->where('status', 'aktif');
+            })
+            ->whereNotIn('id_pesertaarisan', $sudahMenangIds);
+
+        // Proses Filter Skema jika ada request masuk dari dropdown select
+        if ($request->filled('filter_skema') && $request->filter_skema !== 'all') {
+            $queryAntrean->where('id_skema', str_replace('skema-', '', $request->filter_skema));
+        }
+
+        // Ubah menjadi Paginate dan pastikan Kelompok berada di atas sebelum Perorangan
+        $antreanPaginator = $queryAntrean
+            ->withCount(['transaksi as total_iuran_sukses' => function($query) {
+                $query->where('status_pembayaran', 'sukses');
+            }])
+            ->orderByRaw("CASE WHEN id_kelompok IS NOT NULL THEN 0 ELSE 1 END")
+            ->orderBy('id_kelompok', 'asc')
+            ->paginate(10, ['*'], 'page_antrean') // Disamakan dengan tab pemenang menggunakan penamaan manual
+            ->appends($request->all()); // Menjaga link parameter agar page_pemenang & filter_skema tidak hilang
+
         return view('admin.undian.index', compact(
-            'skemas', 'undians', 'totalPeserta', 'menunggu', 'selesai', 'saldoKasGlobal'
+            'skemas', 'undians', 'totalPeserta', 'menunggu', 'selesai', 'saldoKasGlobal', 'antreanPaginator'
         ));
     }
 

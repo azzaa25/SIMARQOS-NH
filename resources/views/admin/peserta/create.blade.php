@@ -24,15 +24,15 @@
 
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-10">
                 
-                {{-- KIRI: BIODATA & KEAMANAN --}}
+                {{-- KIRI: BIODATA, AKUN & DOMISILI --}}
                 <div class="lg:col-span-7 space-y-6">
                     <div class="flex items-center gap-3 mb-2">
                         <div class="w-9 h-9 bg-green-50 text-green-700 rounded-2xl flex items-center justify-center shadow-sm">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                         </div>
                         <div>
-                            <h3 class="text-sm font-black text-gray-800 uppercase tracking-wider leading-none">Biodata & Keamanan</h3>
-                            <p class="text-[10px] text-gray-400 mt-1">Lengkapi informasi dasar dan akun sistem</p>
+                            <h3 class="text-sm font-black text-gray-800 uppercase tracking-wider leading-none">Biodata & Informasi Personal</h3>
+                            <p class="text-[10px] text-gray-400 mt-1">Lengkapi informasi dasar, kontak, dan tempat tinggal</p>
                         </div>
                     </div>
 
@@ -61,56 +61,70 @@
 
                         <div class="space-y-1.5">
                             <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Nomor WhatsApp Aktif</label>
-                            <input type="text" name="no_hp" value="{{ old('no_hp') }}" required placeholder="Contoh: 081234567890"
+                            <input type="text" name="no_hp" id="input_nohp" value="{{ old('no_hp') }}" required placeholder="Contoh: 081234567890"
                                    class="w-full px-5 py-3 bg-gray-50/50 border @error('no_hp') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 placeholder:text-gray-300">
                             @error('no_hp') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
+                        </div>
+
+                        {{-- 🌟 PINDAH KE SINI: ALAMAT SEKARANG BERADA DI SISI KIRI DI BAWAH NO HP OLEH KARENA PERMINTAAN USER --}}
+                        <div class="space-y-1.5">
+                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat Domisili Rumah</label>
+                            <textarea name="alamat" rows="3" required placeholder="Masukkan alamat rumah lengkap, jalan, RT/RW, kelurahan..."
+                                      class="w-full px-5 py-3 bg-gray-50/50 border @error('alamat') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 resize-none placeholder:text-gray-300 leading-relaxed">{{ old('alamat') }}</textarea>
+                            @error('alamat') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
 
-                {{-- KANAN: SKEMA & DOMISILI --}}
-                <div class="lg:col-span-5 flex flex-col space-y-6">
-                    <div class="flex items-center gap-3 mb-2">
-                        <div class="w-9 h-9 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-sm">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-black text-gray-800 uppercase tracking-wider leading-none">Skema & Domisili</h3>
-                            <p class="text-[10px] text-gray-400 mt-1">Pengaturan paket dan alamat</p>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 flex-1">
-                        <div class="space-y-1.5">
-                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Alamat Domisili</label>
-                            <textarea name="alamat" rows="2" required placeholder="Masukkan alamat rumah lengkap..."
-                                      class="w-full px-5 py-3 bg-gray-50/50 border @error('alamat') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 focus:bg-white transition-all outline-none text-sm font-semibold text-gray-700 resize-none placeholder:text-gray-300 leading-relaxed">{{ old('alamat') }}</textarea>
-                            @error('alamat') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
+                {{-- KANAN: SKEMA & PERIODE PELAKSANAAN --}}
+                <div class="lg:col-span-5 flex flex-col justify-between">
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-3 mb-2">
+                            <div class="w-9 h-9 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center shadow-sm">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-black text-gray-800 uppercase tracking-wider leading-none">Pengaturan Arisan</h3>
+                                <p class="text-[10px] text-gray-400 mt-1">Konfigurasi paket cicilan dan target tahun qurban</p>
+                            </div>
                         </div>
 
-                        <div class="space-y-1.5">
-                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Pilih Paket Arisan</label>
-                            <select name="id_skema" required
-                                    class="w-full px-5 py-3 bg-gray-50/50 border @error('id_skema') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-bold text-green-800 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2rem_1.2rem] bg-[right_1.2rem_center] bg-no-repeat">
-                                <option value="">-- Cari Skema Aktif --</option>
-                                @foreach($skemas as $skema)
-                                    <option value="{{ $skema->id_skema }}" {{ old('id_skema') == $skema->id_skema ? 'selected' : '' }}>{{ $skema->nama_skema }}</option>
-                                @endforeach
-                            </select>
-                            @error('id_skema') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
-                        </div>
+                        <div class="space-y-4">
+                            {{-- Dropdown Pilih Paket Arisan --}}
+                            <div class="space-y-1.5">
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Pilih Paket Arisan</label>
+                                <select name="id_skema" id="id_skema" required onchange="updateDropdownTahun()"
+                                        class="w-full px-5 py-3 bg-gray-50/50 border @error('id_skema') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-pointer font-bold text-green-800 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2rem_1.2rem] bg-[right_1.2rem_center] bg-no-repeat">
+                                    <option value="">-- Cari Skema Arisan --</option>
+                                    @foreach($skemas as $skema)
+                                        <option value="{{ $skema->id_skema }}" {{ old('id_skema') == $skema->id_skema ? 'selected' : '' }}>{{ $skema->nama_skema }} ({{ $skema->durasi_bulan }} Bulan)</option>
+                                    @endforeach
+                                </select>
+                                @error('id_skema') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
+                            </div>
 
-                        <div class="space-y-1.5">
-                            <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">Status Akun</label>
-                            <div class="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-[20px]">
-                                <div class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            {{-- Dropdown Pilihan Tahun Periode Dinamis AJAX --}}
+                            <div class="space-y-1.5">
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1">Tahun Periode Pelaksanaan</label>
+                                <select name="tahun_periode" id="tahun_periode" required disabled
+                                        class="w-full px-5 py-3 bg-gray-100 border @error('tahun_periode') border-red-400 @else border-gray-100 @enderror rounded-2xl focus:ring-4 focus:ring-green-500/10 focus:border-green-500 outline-none text-sm cursor-not-allowed font-bold text-gray-700 transition-all appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20fill%3D%22none%22%20viewBox%3D%220%200%2024%2024%22%20stroke%3D%22currentColor%22%3E%3Cpath%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20stroke-width%3D%222%22%20d%3D%22M19%209l-7%207-7-7%22%20%2F%3E%3C%2Fsvg%3E')] bg-[length:1.2rem_1.2rem] bg-[right_1.2rem_center] bg-no-repeat">
+                                    <option value="">-- Pilih Paket Arisan Terlebih Dahulu --</option>
+                                </select>
+                                @error('tahun_periode') <p class="text-[10px] text-red-500 font-bold ml-1 uppercase">{{ $message }}</p> @enderror
+                            </div>
+
+                            <div class="space-y-1.5">
+                                <label class="block text-[11px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-2">Status Aktivasi Akun</label>
+                                <div class="flex items-center gap-4 p-4 bg-blue-50/50 border border-blue-100 rounded-[20px]">
+                                    <div class="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest leading-none">Otomatis Aktif</p>
+                                        <p class="text-[10px] text-blue-400 mt-1 italic leading-tight">Pendaftaran via Admin otomatis mengaktifkan akun jamaah.</p>
+                                    </div>
+                                    <input type="hidden" name="status" value="aktif">
                                 </div>
-                                <div>
-                                    <p class="text-[11px] font-black text-blue-600 uppercase tracking-widest leading-none">Otomatis Aktif</p>
-                                    <p class="text-[10px] text-blue-400 mt-1 italic leading-tight">Pendaftaran oleh Admin akan langsung mengaktifkan akun peserta.</p>
-                                </div>
-                                <input type="hidden" name="status" value="aktif">
                             </div>
                         </div>
                     </div>
@@ -127,6 +141,7 @@
                         </button>
                     </div>
                 </div>
+
             </div>
         </form>
     </div>
@@ -137,16 +152,76 @@
         @if ($errors->any())
             Swal.fire({
                 icon: 'error',
-                title: 'Gagal Mendaftarkan',
-                text: 'Mohon periksa kembali. Nama atau Nomor HP mungkin sudah terdaftar di sistem.',
+                title: 'Pendaftaran Ditutup',
+                text: '{!! $errors->first() !!}',
                 confirmButtonColor: '#147a54',
                 customClass: { popup: 'rounded-[32px]' }
             });
         @endif
+
+        // Pemicu otomatis load tahun jika halaman direfresh pasca validasi gagal
+        if(document.getElementById('id_skema').value) {
+            updateDropdownTahun({!! old('tahun_periode', 'null') !!});
+        }
     });
 
+    // 🌟 FUNGSI AJAX INTERAKTIF DROPDOWN TAHUN (VERSI ANTI-GAGAL NGROK)
+    function updateDropdownTahun(selectedTahun = null) {
+        const idSkema = document.getElementById('id_skema').value;
+        const selectTahun = document.getElementById('tahun_periode');
+
+        if (!idSkema) {
+            selectTahun.innerHTML = '<option value="">-- Pilih Paket Arisan Terlebih Dahulu --</option>';
+            selectTahun.disabled = true;
+            selectTahun.classList.add('bg-gray-100', 'cursor-not-allowed');
+            return;
+        }
+
+        // Tampilkan status memuat data biar admin tahu sistem sedang bekerja
+        selectTahun.innerHTML = '<option value="">Memeriksa kuota periode...</option>';
+        selectTahun.disabled = true;
+
+        fetch(`/admin/peserta/check-skema-periode?id_skema=${idSkema}`)
+            .then(response => {
+                if (!response.ok) throw new Error('Route atau Server bermasalah');
+                return response.json();
+            })
+            .then(data => {
+                selectTahun.innerHTML = '';
+                
+                // Jika backend mengirim array kosong [], berarti untuk semua tahun skema ini sudah ditutup!
+                if (!data || data.length === 0) {
+                    selectTahun.innerHTML = '<option value="">Pendaftaran Periode Angkatan Ini Sudah Ditutup</option>';
+                    selectTahun.disabled = true;
+                    selectTahun.classList.add('bg-gray-100', 'cursor-not-allowed');
+                    selectTahun.classList.remove('bg-gray-50/50');
+                } else {
+                    // Buka kuncian element dropdown tahun karena lolos filter backend
+                    selectTahun.disabled = false;
+                    selectTahun.classList.remove('bg-gray-100', 'cursor-not-allowed');
+                    selectTahun.classList.add('bg-gray-50/50');
+
+                    // Isi data tahun target pelaksanaan qurban sesuai kiriman backend
+                    data.forEach(tahun => {
+                        const option = document.createElement('option');
+                        option.value = tahun;
+                        option.textContent = `Tahun Pelaksanaan ${tahun}`;
+                        if(selectedTahun && tahun == selectedTahun) {
+                            option.selected = true;
+                        }
+                        selectTahun.appendChild(option);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching data tahun:', error);
+                // 🛠️ FIX: Jika AJAX gagal/error, tetap kunci dropdown agar tidak meloloskan data ilegal
+                selectTahun.innerHTML = '<option value="">Gagal memuat data periode (Periksa Route/Server)</option>';
+                selectTahun.disabled = true;
+                selectTahun.classList.add('bg-gray-100', 'cursor-not-allowed');
+            });
+    }
     function confirmStore() {
-        // ... (kode confirmStore Anda yang sudah ada tetap sama)
         const nama = document.getElementById('input_nama').value;
         if (!nama) {
             Swal.fire({

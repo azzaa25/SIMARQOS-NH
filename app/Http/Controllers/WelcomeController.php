@@ -56,6 +56,7 @@ class WelcomeController extends Controller
         }
 
         $donatur = DanaSosial::where('id_kegiatan', $id)
+                    ->where('tipe_dana', 'masuk') // Ambil hanya donasi masuk
                     ->whereIn('status_pembayaran', ['success', 'settlement'])
                     ->orderBy('tanggal_input', 'desc')
                     ->get();

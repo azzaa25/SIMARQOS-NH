@@ -54,16 +54,12 @@
                     </div>
                 </div>
 
-                <div class="mt-8 pt-8 border-t border-gray-50 flex justify-around">
-                    <div class="text-center">
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Total Iuran</p>
-                        <p class="text-sm font-black text-green-700">0x</p>
-                    </div>
-                    <div class="w-px h-8 bg-gray-100"></div>
-                    <div class="text-center">
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">Kehadiran</p>
-                        <p class="text-sm font-black text-gray-800">100%</p>
-                    </div>
+                {{-- INFO TOTAL IURAN --}}
+                <div class="mt-8 pt-6 border-t border-gray-100 bg-slate-50/50 rounded-2xl py-4 px-2">
+                    <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-1">Total Iuran Terbayar</p>
+                    <p class="text-2xl font-black text-green-700">
+                        {{ $peserta->total_iuran ?? 0 }}<span class="text-xs text-gray-400 font-bold ml-1 uppercase tracking-wider">Bulan</span>
+                    </p>
                 </div>
             </div>
         </div>
@@ -79,10 +75,9 @@
                 </div>
 
                 <div class="p-8 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
-                    {{-- Row 1 --}}
                     <div class="space-y-1">
                         <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Email Terdaftar</p>
-                        <p class="text-sm font-bold text-gray-700 break-all">{{ $peserta->user->email ?? 'Tidak terhubung ke sistem' }}</p>
+                        <p class="text-sm font-bold text-gray-700 break-all">{{ $peserta->user->email ?? 'Tidak terhubung' }}</p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Nomor WhatsApp</p>
@@ -93,18 +88,14 @@
                             </a>
                         </div>
                     </div>
-
-                    {{-- Row 2 --}}
                     <div class="space-y-1">
                         <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Skema Arisan</p>
-                        <p class="text-sm font-bold text-green-700">{{ $peserta->skemaArisan->nama_skema ?? 'Belum memilih skema' }}</p>
+                        <p class="text-sm font-bold text-green-700">{{ $peserta->skemaArisan->nama_skema ?? '-' }}</p>
                     </div>
                     <div class="space-y-1">
                         <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Tanggal Bergabung</p>
                         <p class="text-sm font-bold text-gray-700">{{ $peserta->created_at->format('d F Y') }}</p>
                     </div>
-
-                    {{-- Row 3 Full --}}
                     <div class="md:col-span-2 space-y-1 pt-4 border-t border-gray-50">
                         <p class="text-[10px] text-gray-400 font-black uppercase tracking-widest leading-none">Alamat Domisili Lengkap</p>
                         <p class="text-sm font-medium text-gray-600 leading-relaxed italic">"{{ $peserta->alamat }}"</p>
@@ -119,7 +110,7 @@
                 </div>
                 <div>
                     <h4 class="text-xs font-black text-blue-900 uppercase tracking-widest leading-none mb-1">Catatan Admin</h4>
-                    <p class="text-[11px] text-blue-800/70 leading-relaxed font-medium italic">Data ini terhubung langsung dengan akun pengguna sistem. Perubahan nama pada halaman ini akan merubah identitas login peserta.</p>
+                    <p class="text-[11px] text-blue-800/70 leading-relaxed font-medium italic">Data ini terhubung langsung dengan riwayat transaksi pembayaran arisan yang sah melalui sistem.</p>
                 </div>
             </div>
         </div>

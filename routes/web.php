@@ -66,7 +66,10 @@ Route::middleware(['auth', 'role:admin'])
         // SKEMA ARISAN ROUTES
         Route::resource('skema', SkemaArisanController::class);
         // PESERTA ARISAN ROUTES
+        Route::get('peserta/check-skema-periode', [PesertaArisanController::class, 'checkSkemaPeriode'])->name('peserta.checkSkemaPeriode');
         Route::resource('peserta', PesertaArisanController::class);
+        Route::get('peserta/kelompok/{id_kelompok}/tambah-anggota', [PesertaArisanController::class, 'createAnggotaKelompok']);
+        Route::post('peserta/kelompok/{id_kelompok}/tambah-anggota', [PesertaArisanController::class, 'storeAnggotaKelompok']);
         // USER APPROVAL ROUTES
         Route::get('/pending', [UserApprovalController::class, 'index'])->name('pending.index');
         Route::post('/pending/{id}/approve', [UserApprovalController::class, 'approve'])->name('pending.approve');
@@ -85,7 +88,7 @@ Route::middleware(['auth', 'role:admin'])
         Route::post('/transaksi/verifikasi/{id}', [TransaksiAdminController::class, 'verifikasiManual'])->name('transaksi.verifikasi');
         Route::post('/transaksi/generate', [TransaksiAdminController::class, 'generateTagihan'])->name('transaksi.generate');
         Route::get('/transaksi/export', [TransaksiAdminController::class, 'exportPDF'])->name('transaksi.export');
-        Route::post('/transaksi/tagih-wa', [TransaksiAdminController::class, 'kirimTagihanWa'])->name('transaksi.tagih-wa');
+        Route::post('/transaksi/tagih-wa/{id}', [TransaksiAdminController::class, 'kirimTagihanWaPersonal'])->name('transaksi.tagih-wa');
         // KEGIATAN SOSIAL ROUTES
         Route::prefix('sosial')->as('sosial.')->group(function () {
             Route::get('/', [KegiatanSosialController::class, 'index'])->name('index');

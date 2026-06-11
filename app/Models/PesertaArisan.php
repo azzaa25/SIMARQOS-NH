@@ -16,6 +16,7 @@ class PesertaArisan extends Model
         'nama',
         'alamat',
         'no_hp',
+        'tahun_periode',
         'status'
     ];
 
@@ -42,5 +43,18 @@ class PesertaArisan extends Model
     public function transaksi()
     {
         return $this->hasMany(TransaksiPembayaran::class, 'id_pesertaarisan', 'id_pesertaarisan');
+    }
+    public function pengeluaranArisan()
+    {
+        // Jika PengeluaranArisan terhubung ke Undian, 
+        // dan Undian terhubung ke PesertaArisan:
+        return $this->hasOneThrough(
+            \App\Models\PengeluaranArisan::class, 
+            \App\Models\UndianArisan::class, 
+            'id_pesertaarisan', 
+            'id_undian',        
+            'id_pesertaarisan', 
+            'id_undian'         
+        );
     }
 }

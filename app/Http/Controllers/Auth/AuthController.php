@@ -109,6 +109,26 @@ class AuthController extends Controller
                 'id_skema.exists'    => 'Skema tidak valid',
             ]
         );
+        
+        $skemaPilihan = SkemaArisan::findOrFail($request->id_skema);
+        $durasiBulan = (int)$skemaPilihan->durasi_bulan;
+
+        if ($durasiBulan == 36) {
+            // Peta Bulan Idul Adha terdekat angkatan berjalan (2027)
+            $tahunTargetAngkatanAktif = 2027;
+            $bulanIdulAdha = 5; // Mei
+            $bulanLunas = $bulanIdulAdha - 1; // April
+
+            $tanggalJatuhTempoAkhir = Carbon::create($tahunTargetAngkatanAktif, $bulanLunas, 1);
+            $tanggalMulaiTagihanSeharusnya = $tanggalJatuhTempoAkhir->copy()->subMonths($durasiBulan - 1);
+
+            // Jika hari ini sudah melewati bulan mulai tagihan angkatan aktif, KUNCI PENDAFTARANNYA
+            if (Carbon::now()->startOfMonth()->greaterThan($tanggalMulaiTagihanSeharusnya->startOfMonth())) {
+                return back()->withInput()->withErrors([
+                    'id_skema' => 'Pendaftaran untuk skema arisan 3 tahun angkatan saat ini sudah ditutup karena periode iuran sudah berjalan.'
+                ]);
+            }
+        }
 
         // ✅ SIMPAN USER (STATUS OTOMATIS PENDING)
         $user = User::create([

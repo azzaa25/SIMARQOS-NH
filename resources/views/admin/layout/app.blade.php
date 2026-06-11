@@ -154,17 +154,13 @@
                                     </div>
                                     
                                     <div class="flex items-center gap-2 shrink-0">
-                                        {{-- Tombol Approve --}}
-                                        <form action="{{ route('admin.pending.approve', $user->id_user) }}" method="POST">
-                                            @csrf
-                                            <button type="submit" class="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-90" title="Setujui">
-                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
+                                        <a href="{{ route('admin.pending.index') }}" class="p-2 bg-green-50 text-green-600 rounded-xl hover:bg-green-600 hover:text-white transition-all active:scale-90" title="Buka Halaman Verifikasi">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                        </a>
 
-                                        {{-- Tombol Reject (X) --}}
+                                        {{-- Tombol Reject (X) Biarkan Tetap Utuh --}}
                                         <form action="{{ route('admin.pending.reject', $user->id_user) }}" method="POST">
                                             @csrf
                                             <button type="submit" class="p-2 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all active:scale-90" title="Tolak & Hapus">

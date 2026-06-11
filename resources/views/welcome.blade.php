@@ -304,119 +304,189 @@
         </div>
     </section>
 
-    <div id="modalDonasi" class="fixed inset-0 z-[60] hidden flex items-center justify-center p-4">
-        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDonasiModal()"></div>
-        <div class="glass-card relative w-full max-w-md p-8 rounded-[40px] shadow-2xl border border-white/20">
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h3 class="text-2xl font-black text-slate-900">Infaq Terbaik</h3>
-                    <p id="namaKegiatanModal" class="text-[10px] text-[#147a54] font-black uppercase tracking-widest mt-1"></p>
-                </div>
-                <button onclick="closeDonasiModal()" class="text-slate-400 hover:text-red-500">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+    {{-- MODAL --}}
+    <div id="modalDonasi" class="fixed inset-0 z-[60] hidden items-center justify-center p-4">
+        {{-- Overlay --}}
+        <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
+             onclick="closeDonasiModal()"></div>
+        {{-- Modal --}}
+        <div class="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden">
+            {{-- Header --}}
+            <div class="relative px-8 pt-8 pb-6 bg-gradient-to-br from-[#147a54] to-[#0d5c3f] text-white">
+                <button onclick="closeDonasiModal()"
+                        class="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                              d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
                 </button>
+                <p class="text-[10px] uppercase tracking-[0.3em] font-black text-green-100 mb-3">
+                    Infaq & Donasi
+                </p>
+                <h3 class="text-3xl font-black leading-tight">
+                    Salurkan Kebaikan
+                </h3>
+                <p id="namaKegiatanModal"
+                   class="mt-3 text-sm text-green-100 font-semibold">
+                </p>
             </div>
-            
-            <form id="donasiForm" class="space-y-5">
-                <input type="hidden" id="modal_id_kegiatan_hidden">
-                <div>
-                    <label class="text-[10px] font-black uppercase text-gray-400 block mb-2">Nama Donatur</label>
-                    <input type="text" id="modal_nama" placeholder="Hamba Allah" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold transition-all">
-                </div>
-                <div>
-                    <label class="text-[10px] font-black uppercase text-gray-400 block mb-2">Nominal (Rp)</label>
-                    <input type="number" id="modal_nominal" min="10000" placeholder="Contoh: 50000" class="w-full px-5 py-4 rounded-2xl border border-slate-100 bg-slate-50/50 focus:ring-2 focus:ring-green-500 outline-none text-sm font-bold transition-all" required>
-                </div>
-                
-                <div class="pt-4">
-                    <button type="submit" id="pay-button" class="w-full py-5 bg-[#147a54] text-white font-black rounded-2xl shadow-xl shadow-green-900/20 hover:bg-[#0d5c3f] transition-all flex items-center justify-center gap-3">
-                        <span>Lanjutkan Pembayaran</span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-                    </button>
-                </div>
-            </form>
+            {{-- Body --}}
+            <div class="p-8">
+                <form id="donasiForm" class="space-y-6">
+                    <input type="hidden" id="modal_id_kegiatan_hidden">
+                    {{-- Nama --}}
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 ml-1">
+                            Nama Donatur
+                        </label>
+                        <input type="text"
+                               id="modal_nama"
+                               placeholder="Hamba Allah"
+                               class="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-slate-50 focus:ring-4 focus:ring-green-500/10 focus:border-[#147a54] outline-none font-bold text-sm">
+                    </div>
+                    {{-- Nominal --}}
+                    <div>
+                        <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 ml-1">
+                            Nominal Donasi
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">
+                                Rp
+                            </span>
+                            <input type="text"
+                                   id="modal_nominal"
+                                   placeholder="50.000"
+                                   class="w-full h-16 pl-14 pr-5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-2xl font-black tracking-tight focus:ring-4 focus:ring-green-500/10 focus:border-[#147a54] outline-none"
+                                   required>
+                        </div>
+                        <div class="flex gap-2 mt-4 flex-wrap">
+                            <button type="button" onclick="setNominal(50000)" class="quick-btn">
+                                50rb
+                            </button>
+                            <button type="button" onclick="setNominal(100000)" class="quick-btn">
+                                100rb
+                            </button>
+                            <button type="button" onclick="setNominal(250000)" class="quick-btn">
+                                250rb
+                            </button>
+                            <button type="button" onclick="setNominal(500000)" class="quick-btn">
+                                500rb
+                            </button>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mt-3 ml-1 italic">
+                            Minimal donasi Rp 10.000
+                        </p>
+                    </div>
+                    {{-- BUTTON --}}
+                    <div class="pt-2">
+                        <button type="submit"
+                                id="pay-button"
+                                class="w-full h-16 bg-[#147a54] hover:bg-[#0d5c3f] text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-green-900/20 transition-all hover:-translate-y-1">
+                            Bayar Sekarang
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
-
+    {{-- SCRIPT --}}
     <script>
-        function openDonasiModal(id, nama) {
+        function openDonasiModal(id,nama){
             document.getElementById('modal_id_kegiatan_hidden').value = id;
             document.getElementById('namaKegiatanModal').innerText = nama;
-            document.getElementById('modalDonasi').classList.remove('hidden');
-            document.body.style.overflow = 'hidden'; 
+            const modal = document.getElementById('modalDonasi');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            document.body.style.overflow = 'hidden';
         }
 
-        function closeDonasiModal() {
-            document.getElementById('modalDonasi').classList.add('hidden');
+        function closeDonasiModal(){
+            const modal = document.getElementById('modalDonasi');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
             document.body.style.overflow = 'auto';
         }
+        const nominalInput = document.getElementById('modal_nominal');
+        nominalInput.addEventListener('input', function(){
+            let value = this.value.replace(/\D/g,'');
+            if(value){
+                this.value = new Intl.NumberFormat('id-ID').format(value);
+            }else{
+                this.value = '';
+            }
+        });
 
-        document.getElementById('donasiForm').onsubmit = function(e) {
+        function setNominal(nominal){
+            nominalInput.value = new Intl.NumberFormat('id-ID').format(nominal);
+        }
+        document.getElementById('donasiForm').onsubmit = function(e){
             e.preventDefault();
             const btn = document.getElementById('pay-button');
             const originalText = btn.innerHTML;
-            
-            btn.innerHTML = "Memproses...";
+            btn.innerHTML = "Menghubungkan Midtrans...";
             btn.disabled = true;
-
             const dataDonasi = {
-                id_kegiatan: document.getElementById('modal_id_kegiatan_hidden').value,
-                nama_donatur: document.getElementById('modal_nama').value || 'Hamba Allah',
-                nominal: document.getElementById('modal_nominal').value
+                id_kegiatan : document.getElementById('modal_id_kegiatan_hidden').value,
+                nama_donatur : document.getElementById('modal_nama').value || 'Hamba Allah',
+                nominal : document.getElementById('modal_nominal').value.replace(/\./g,'')
             };
-
-            fetch("{{ route('donasi.checkout') }}", {
-                method: "POST",
-                headers: { 
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": "{{ csrf_token() }}" 
+            fetch("{{ route('donasi.checkout') }}",{
+                method:"POST",
+                headers:{
+                    "Content-Type":"application/json",
+                    "X-CSRF-TOKEN":"{{ csrf_token() }}"
                 },
-                body: JSON.stringify(dataDonasi)
+                body:JSON.stringify(dataDonasi)
             })
             .then(response => response.json())
             .then(data => {
-                if(data.token) {
-                    window.snap.pay(data.token, {
-                        onSuccess: function(result) { window.location.reload(); },
-                        onPending: function(result) { window.location.reload(); },
-                        onError: function(result) { 
-                            alert("Pembayaran Gagal"); 
-                            btn.disabled = false; 
-                            btn.innerHTML = originalText; 
+                if(data.token){
+                    window.snap.pay(data.token,{
+                        onSuccess:function(result){
+                            window.location.reload();
                         },
-                        onClose: function() {
+                        onPending:function(result){
+                            window.location.reload();
+                        },
+                        onError:function(result){
+                            alert("Pembayaran gagal");
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        },
+                        onClose:function(){
                             btn.disabled = false;
                             btn.innerHTML = originalText;
                         }
                     });
-                } else {
-                    alert("Gagal mendapatkan token: " + (data.error || "Unknown error"));
+                }else{
+                    alert("Sistem sibuk, coba lagi nanti.");
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                 }
             })
             .catch(err => {
-                console.error(err);
-                alert("Terjadi kesalahan sistem.");
+                console.log(err);
                 btn.disabled = false;
                 btn.innerHTML = originalText;
             });
         };
     </script>
     <style>
-    @keyframes marquee {
-        0% { transform: translateX(0); }
-        100% { transform: translateX(-50%); }
-    }
-    .animate-marquee {
-        animation: marquee 25s linear infinite;
-        display: flex;
-        width: max-content;
-    }
-    /* Berhenti saat kursor diarahkan agar mudah dibaca */
-    .animate-marquee:hover {
-        animation-play-state: paused;
-    }
-</style>
+        .quick-btn{
+            padding:10px 18px;
+            border-radius:16px;
+            background:#f1f5f9;
+            font-size:11px;
+            font-weight:800;
+            color:#147a54;
+            transition:.3s;
+            text-transform:uppercase;
+            letter-spacing:.1em;
+        }
+        .quick-btn:hover{
+            background:#147a54;
+            color:white;
+        }
+    </style>
 </body>
 </html>

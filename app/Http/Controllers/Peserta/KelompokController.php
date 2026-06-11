@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\PesertaArisan;
 use App\Models\KelompokArisan;
 use App\Models\User;
+use App\Models\TransaksiPembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class KelompokController extends Controller
 {
@@ -123,11 +125,51 @@ class KelompokController extends Controller
             // 5. UPDATE STATUS KELOMPOK
             $jumlahFinal = PesertaArisan::where('id_kelompok', $ketua->id_kelompok)->count();
             if ($jumlahFinal >= 7) {
+                // Kunci status kelompok menjadi lengkap
                 KelompokArisan::where('id_kelompok', $ketua->id_kelompok)
                     ->update(['status_kelompok' => 'lengkap']);
+
+                // Ambil parameter periode dari data ketua kelompok
+                $tahunTarget = (int)$ketua->tahun_periode;
+                $durasiBulan = (int)$ketua->skemaArisan->durasi_bulan; // 12 atau 36
+
+                $petaIdulAdha = [2026 => 5, 2027 => 5, 2028 => 4, 2029 => 4, 2030 => 3];
+                $bulanIdulAdha = $petaIdulAdha[$tahunTarget] ?? 5;
+                $bulanLunas = $bulanIdulAdha - 1;
+
+                // Hitung mundur awal mula siklus iuran wajib
+                $tanggalJatuhTempoAkhir = Carbon::create($tahunTarget, $bulanLunas, 10);
+                $tanggalMulaiTagihan = $tanggalJatuhTempoAkhir->subMonths($durasiBulan - 1);
+                $bulanIuranFormat = $tanggalMulaiTagihan->locale('en')->format('F Y');
+
+                // Hitung nominal final (Total iuran hewan qurban paket dibagi rata 7 orang)
+                $nominalBagiTujuh = ceil($ketua->skemaArisan->nominal_iuran / 7);
+
+                // Ambil data ke-7 anggota kelompok tersebut
+                $semuaAnggota = PesertaArisan::where('id_kelompok', $ketua->id_kelompok)->get();
+
+                // Buatkan Invoice tagihan pertama secara bersamaan untuk ke-7 orang
+                foreach ($semuaAnggota as $anggotaKelompok) {
+                    $cekTagihan = TransaksiPembayaran::where('id_pesertaarisan', $anggotaKelompok->id_pesertaarisan)
+                        ->where('bulan_iuran', $bulanIuranFormat)
+                        ->exists();
+
+                    if (!$cekTagihan) {
+                        TransaksiPembayaran::create([
+                            'id_pesertaarisan' => $anggotaKelompok->id_pesertaarisan,
+                            'order_id'         => 'INV-' . strtoupper(bin2hex(random_bytes(3))) . '-' . $anggotaKelompok->id_pesertaarisan,
+                            'nominal'          => $nominalBagiTujuh,
+                            'bulan_iuran'      => $bulanIuranFormat,
+                            'status_pembayaran'=> 'pending',
+                        ]);
+                    }
+                }
             }
 
             DB::commit();
+            if ($jumlahFinal >= 7) {
+                return back()->with('success', 'Anggota ke-7 berhasil bergabung! Kelompok kini resmi LENGKAP dan tagihan bulan pertama untuk seluruh anggota kelompok berhasil diterbitkan.');
+            }
             return back()->with('success', 'Anggota berhasil ditambahkan.');
 
         } catch (\Exception $e) {

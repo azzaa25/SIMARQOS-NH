@@ -44,21 +44,15 @@ class KegiatanSosialController extends Controller
 
     public function index(Request $request)
     {
-        // UPDATE STATUS OTOMATIS
+        // 1. UPDATE STATUS OTOMATIS
         $this->updateStatusKegiatan();
 
+        // 2. AMBIL DATA KATEGORI UNTUK FILTER
         $kategori = KategoriSosial::all();
         
+        // 3. HITUNG STATISTIK RINGKAS
         $totalKegiatanSemua = KegiatanSosial::count();
 
-        $query = KegiatanSosial::with('kategori');
-
-        if ($request->has('kategori') && $request->kategori != '') {
-            $query->where('id_kategori', $request->kategori);
-        }
-
-        $kegiatan = $query->orderBy('tanggal_kegiatan', 'desc')->get();
-        
         $totalMasuk = DanaSosial::where('tipe_dana', 'masuk')
                         ->where('status_pembayaran', 'success')
                         ->sum('nominal');
@@ -67,6 +61,22 @@ class KegiatanSosialController extends Controller
                         ->sum('nominal');
 
         $saldoSosial = $totalMasuk - $totalKeluar;
+
+        // 4. QUERY KEGIATAN DENGAN FILTER
+        $query = KegiatanSosial::with('kategori');
+
+        // Filter Berdasarkan Kategori (Dropdown)
+        if ($request->filled('kategori')) {
+            $query->where('id_kategori', $request->kategori);
+        }
+
+        // Filter Berdasarkan Status (Tabs: rencana, berlangsung, selesai)
+        if ($request->filled('status')) {
+            $query->where('status_kegiatan', $request->status);
+        }
+
+        // 5. EKSEKUSI DENGAN PAGINATION (Agar firstItem() tidak error)
+        $kegiatan = $query->orderBy('tanggal_kegiatan', 'desc')->paginate(5);
 
         return view('admin.sosial.index', compact(
             'kategori',
@@ -177,7 +187,7 @@ class KegiatanSosialController extends Controller
         try {
             // Langsung kirim pesan teks
             $response = Http::post(env('WA_BOT_URL'), [
-                'groupId' => env('WA_GROUP_ID'),
+                'target' => env('WA_GROUP_ID'),
                 'message' => $pesan
             ]);
 
@@ -219,22 +229,21 @@ class KegiatanSosialController extends Controller
     {
         $kegiatan = KegiatanSosial::findOrFail($id);
 
-        // 1. Hapus file Pamflet dari storage
+        // CEK APAKAH SUDAH ADA DONASI MASUK
+        if ($kegiatan->total_masuk > 0) {
+            return redirect()->back()->with('error', 'Gagal menghapus! Kegiatan ini sudah memiliki donasi yang masuk. Anda hanya dapat mengubah status menjadi selesai atau mengeditnya.');
+        }
+        // Jika belum ada donasi, proses hapus berkas dan data
         if ($kegiatan->pamflet_kegiatan) {
             Storage::disk('public')->delete($kegiatan->pamflet_kegiatan);
         }
-
-        // 2. Hapus semua file Dokumentasi dari storage
         if ($kegiatan->dokumentasi && is_array($kegiatan->dokumentasi)) {
             foreach ($kegiatan->dokumentasi as $foto) {
                 Storage::disk('public')->delete($foto);
             }
         }
-
-        // 3. Hapus data dari database
         $kegiatan->delete();
-
-        return redirect()->back()->with('success', 'Agenda dan seluruh berkas berhasil dihapus');
+        return redirect()->back()->with('success', 'Agenda berhasil dihapus karena belum ada transaksi masuk.');
     }
 
     /*
@@ -367,27 +376,26 @@ class KegiatanSosialController extends Controller
     LAPORAN KEGIATAN SOSIAL
     =============================
     */
-    public function laporan()
+    public function laporan(Request $request) 
     {
-        $laporanKategori = KategoriSosial::withCount('kegiatan')
-            ->get();
-
-        $kegiatanSelesai = KegiatanSosial::with('kategori')
-            ->where('tanggal_kegiatan', '<', now())
-            ->orderBy('tanggal_kegiatan', 'desc')
-            ->get();
-
         $totalDanaMasuk = DanaSosial::where('tipe_dana', 'masuk')
-            ->where('status_pembayaran', 'success')
-            ->sum('nominal');
+                            ->where('status_pembayaran', 'success')
+                            ->sum('nominal');
 
         $totalDanaKeluar = DanaSosial::where('tipe_dana', 'keluar')
-            ->sum('nominal');
+                            ->sum('nominal');
+
+        $query = KegiatanSosial::with('kategori');
+
+        if ($request->filled('status')) {
+            $query->where('status_kegiatan', $request->status);
+        }
+
+        $kegiatanSelesai = $query->orderBy('tanggal_kegiatan', 'desc')->paginate(4)->withQueryString();
 
         return view('admin.sosial.laporan', compact(
-            'laporanKategori',
-            'kegiatanSelesai',
-            'totalDanaMasuk',
+            'kegiatanSelesai', 
+            'totalDanaMasuk', 
             'totalDanaKeluar'
         ));
     }

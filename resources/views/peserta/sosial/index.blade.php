@@ -16,86 +16,174 @@
             @endforeach
         </div>
     </div>
-
     {{-- ================= GRID DAFTAR AGENDA ================= --}}
     <div id="agendaGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-10 px-4 md:px-0">
-        @forelse($agendas as $item)
+
+        {{-- ================= DONASI MASIH DIBUKA ================= --}}
+        @foreach($agendas->where('status_kegiatan','!=','selesai') as $item)
         @php
-            $isSelesai = ($item->status_kegiatan == 'selesai');
-            
+            $isSelesai = false;
             $listDonatur = \App\Models\DanaSosial::where('id_kegiatan', $item->id_kegiatan)
                         ->where('tipe_dana', 'masuk')
                         ->whereIn('status_pembayaran', ['success', 'settlement', 'sukses'])
                         ->orderBy('id_dana', 'desc')
                         ->get();
-
             $danaMasuk = $listDonatur->sum('nominal');
-            $persentase = $item->target_donasi > 0 ? ($danaMasuk / $item->target_donasi) * 100 : 0;
+            $persentase = $item->target_donasi > 0
+                ? ($danaMasuk / $item->target_donasi) * 100
+                : 0;
             if($persentase > 100) $persentase = 100;
-
-            // Memperbaiki slug kategori agar tidak error jika null
             $slugKategori = Str::slug($item->kategori->nama_kategori ?? '');
         @endphp
-
-        <div class="agenda-card bg-white rounded-[40px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col group {{ $isSelesai ? 'border-b-4 border-b-slate-400' : 'border-b-4 border-b-[#147a54]' }}" 
-             data-category="{{ $slugKategori }}">
-            
+        <div class="agenda-card bg-white rounded-[40px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col group border-b-4 border-b-[#147a54]"
+            data-category="{{ $slugKategori }}">
             <div class="relative h-52 overflow-hidden">
-                <img src="{{ $item->pamflet_kegiatan ? asset('storage/'.$item->pamflet_kegiatan) : 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800' }}" 
-                     class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 {{ $isSelesai ? 'grayscale' : '' }}">
+                <img src="{{ $item->pamflet_kegiatan ? asset('storage/'.$item->pamflet_kegiatan) : 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800' }}"
+                    class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
                 <div class="absolute top-5 left-5 flex gap-2">
                     <span class="px-3 py-1 bg-white/90 backdrop-blur-md text-[#147a54] text-[9px] font-black rounded-lg uppercase shadow-sm">
                         {{ $item->kategori->nama_kategori ?? 'Umum' }}
                     </span>
-                    @if($isSelesai) <span class="px-3 py-1 bg-slate-800 text-white text-[9px] font-black rounded-lg uppercase">Selesai</span> @endif
+                    <span class="px-3 py-1 bg-[#147a54] text-white text-[9px] font-black rounded-lg uppercase animate-pulse">
+                        Dibuka
+                    </span>
                 </div>
             </div>
-            
             <div class="p-8 flex-1 flex flex-col">
-                <h3 class="text-lg font-black text-slate-800 mb-2 line-clamp-1 uppercase tracking-tight">{{ $item->nama_kegiatan }}</h3>
-                
+                <h3 class="text-lg font-black text-slate-800 mb-2 line-clamp-1 uppercase tracking-tight">
+                    {{ $item->nama_kegiatan }}
+                </h3>
                 <div class="mb-4">
-                    <p class="text-[9px] font-black text-gray-300 uppercase leading-none mb-1 text-left">Terkumpul</p>
-                    <p class="text-base font-black text-[#147a54] text-left">Rp {{ number_format($danaMasuk, 0, ',', '.') }}</p>
+                    <p class="text-[9px] font-black text-gray-300 uppercase leading-none mb-1 text-left">
+                        Terkumpul
+                    </p>
+                    <p class="text-base font-black text-[#147a54] text-left">
+                        Rp {{ number_format($danaMasuk, 0, ',', '.') }}
+                    </p>
                 </div>
-
                 <div class="mt-auto space-y-5">
                     <div>
                         <div class="flex justify-between text-[9px] font-black uppercase text-slate-400 mb-2">
-                            <span>Target Rp{{ number_format($item->target_donasi, 0, ',', '.') }}</span>
+                            <span>
+                                Target Rp{{ number_format($item->target_donasi, 0, ',', '.') }}
+                            </span>
                             <span>{{ round($persentase) }}%</span>
                         </div>
                         <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div class="h-full {{ $isSelesai ? 'bg-slate-400' : 'bg-[#147a54]' }} rounded-full" style="width: {{ $persentase }}%"></div>
+                            <div class="h-full bg-[#147a54] rounded-full"
+                                style="width: {{ $persentase }}%">
+                            </div>
                         </div>
                     </div>
-
                     <div class="flex gap-2 pt-2">
-                        <button onclick='loadDetail(@json($item), "{{ number_format($danaMasuk, 0, ",", ".") }}", @json($listDonatur))' 
+                        <button onclick='loadDetail(@json($item), "{{ number_format($danaMasuk, 0, ",", ".") }}", @json($listDonatur))'
                                 class="flex-1 py-3 bg-slate-50 text-slate-600 text-[10px] font-black uppercase rounded-2xl border border-slate-100 tracking-widest hover:bg-slate-100 transition-all">
                             Detail
                         </button>
-                        
-                        {{-- Jika belum selesai tampilkan tombol Donasi, jika selesai hanya tombol Detail yang ada (sudah di atas) --}}
-                        @if(!$isSelesai)
-                            <button onclick="openDonasiModal('{{ $item->id_kegiatan }}', '{{ $item->nama_kegiatan }}')" 
-                                    class="flex-1 py-3 bg-[#147a54] text-white text-[10px] font-black rounded-2xl shadow-lg shadow-green-900/20 active:scale-95 uppercase tracking-widest">
-                                Donasi
-                            </button>
-                        @endif
+                        <button onclick="openDonasiModal('{{ $item->id_kegiatan }}', '{{ $item->nama_kegiatan }}')"
+                                class="flex-1 py-3 bg-[#147a54] text-white text-[10px] font-black rounded-2xl shadow-lg shadow-green-900/20 active:scale-95 uppercase tracking-widest">
+                            Donasi
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-        @empty
-        <div class="col-span-full py-32 bg-white rounded-[50px] border border-dashed border-slate-200 text-center">
-            <p class="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">Belum ada kegiatan sosial</p>
+        @endforeach
+        {{-- ================= SEPARATOR KEGIATAN SELESAI ================= --}}
+        @if($agendas->where('status_kegiatan','selesai')->count())
+        <div class="col-span-full mt-10">
+            <div class="flex items-center gap-4 mb-2">
+                <div class="flex-1 h-[1px] bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+                <div class="px-5 py-2 rounded-full bg-slate-100 border border-slate-200 flex items-center gap-2">
+                    <div class="w-2 h-2 rounded-full bg-slate-400"></div>
+                    <span class="text-[10px] font-black uppercase tracking-[0.25em] text-slate-500">
+                        Kegiatan Selesai
+                    </span>
+                </div>
+                <div class="flex-1 h-[1px] bg-gradient-to-r from-transparent via-slate-300 to-transparent"></div>
+            </div>
         </div>
-        @endforelse
-
-        {{-- Pesan jika kategori kosong setelah difilter --}}
-        <div id="emptyFilterMessage" class="hidden col-span-full py-32 bg-white rounded-[50px] border border-dashed border-slate-200 text-center">
-            <p class="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">Maaf, di kategori ini belum ada kegiatan.</p>
+        {{-- ================= CARD KEGIATAN SELESAI ================= --}}
+        @foreach($agendas->where('status_kegiatan','selesai') as $item)
+        @php
+            $isSelesai = true;
+            $listDonatur = \App\Models\DanaSosial::where('id_kegiatan', $item->id_kegiatan)
+                        ->where('tipe_dana', 'masuk')
+                        ->whereIn('status_pembayaran', ['success', 'settlement', 'sukses'])
+                        ->orderBy('id_dana', 'desc')
+                        ->get();
+            $danaMasuk = $listDonatur->sum('nominal');
+            $persentase = $item->target_donasi > 0
+                ? ($danaMasuk / $item->target_donasi) * 100
+                : 0;
+            if($persentase > 100) $persentase = 100;
+            $slugKategori = Str::slug($item->kategori->nama_kategori ?? '');
+        @endphp
+        <div class="agenda-card bg-white rounded-[40px] overflow-hidden border border-slate-100 shadow-sm hover:shadow-xl transition-all flex flex-col group border-b-4 border-b-slate-400"
+            data-category="{{ $slugKategori }}">
+            <div class="relative h-52 overflow-hidden">
+                <img src="{{ $item->pamflet_kegiatan ? asset('storage/'.$item->pamflet_kegiatan) : 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=800' }}"
+                    class="w-full h-full object-cover grayscale transition-transform duration-700 group-hover:scale-110">
+                <div class="absolute top-5 left-5 flex gap-2">
+                    <span class="px-3 py-1 bg-white/90 backdrop-blur-md text-slate-600 text-[9px] font-black rounded-lg uppercase shadow-sm">
+                        {{ $item->kategori->nama_kategori ?? 'Umum' }}
+                    </span>
+                    <span class="px-3 py-1 bg-slate-800 text-white text-[9px] font-black rounded-lg uppercase">
+                        Selesai
+                    </span>
+                </div>
+            </div>
+            <div class="p-8 flex-1 flex flex-col">
+                <h3 class="text-lg font-black text-slate-800 mb-2 line-clamp-1 uppercase tracking-tight">
+                    {{ $item->nama_kegiatan }}
+                </h3>
+                <div class="mb-4">
+                    <p class="text-[9px] font-black text-gray-300 uppercase leading-none mb-1 text-left">
+                        Terkumpul
+                    </p>
+                    <p class="text-base font-black text-slate-500 text-left">
+                        Rp {{ number_format($danaMasuk, 0, ',', '.') }}
+                    </p>
+                </div>
+                <div class="mt-auto space-y-5">
+                    <div>
+                        <div class="flex justify-between text-[9px] font-black uppercase text-slate-400 mb-2">
+                            <span>
+                                Target Rp{{ number_format($item->target_donasi, 0, ',', '.') }}
+                            </span>
+                            <span>{{ round($persentase) }}%</span>
+                        </div>
+                        <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-slate-400 rounded-full"
+                                style="width: {{ $persentase }}%">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="pt-2">
+                        <button onclick='loadDetail(@json($item), "{{ number_format($danaMasuk, 0, ",", ".") }}", @json($listDonatur))'
+                                class="w-full py-3 bg-slate-100 text-slate-600 text-[10px] font-black uppercase rounded-2xl border border-slate-200 tracking-widest hover:bg-slate-200 transition-all">
+                            Lihat Detail
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endforeach
+        @endif
+        {{-- ================= EMPTY ================= --}}
+        @if($agendas->count() == 0)
+        <div class="col-span-full py-32 bg-white rounded-[50px] border border-dashed border-slate-200 text-center">
+            <p class="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">
+                Belum ada kegiatan sosial
+            </p>
+        </div>
+        @endif
+        {{-- ================= EMPTY FILTER ================= --}}
+        <div id="emptyFilterMessage"
+            class="hidden col-span-full py-32 bg-white rounded-[50px] border border-dashed border-slate-200 text-center">
+            <p class="text-slate-400 font-black uppercase text-xs tracking-[0.2em]">
+                Maaf, di kategori ini belum ada kegiatan.
+            </p>
         </div>
     </div>
 </div>
@@ -156,27 +244,100 @@
 </div>
 
 {{-- MODAL DONASI --}}
-<div id="modalDonasi" class="fixed inset-0 z-[120] hidden flex items-center justify-center p-4">
-    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDonasiModal()"></div>
-    <div class="bg-white relative w-full max-w-md p-10 rounded-[50px] shadow-2xl animate-zoomIn">
-        <div class="text-center mb-8">
-            <h3 class="text-2xl font-black text-slate-900 uppercase tracking-tight">Infaq Terbaik</h3>
-            <p id="namaKegiatanModal" class="text-[10px] text-[#147a54] font-black uppercase tracking-widest mt-2"></p>
-        </div>
-        <form id="donasiForm" class="space-y-5">
-            <input type="hidden" id="modal_id_kegiatan_hidden">
-            <div>
-                <label class="text-[10px] font-black uppercase text-slate-400 block mb-2 ml-1 text-left">Donatur</label>
-                <input type="text" value="{{ Auth::user()->nama }}" readonly class="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-black text-slate-400 cursor-not-allowed text-sm uppercase">
-            </div>
-            <div>
-                <label class="text-[10px] font-black uppercase text-slate-400 block mb-2 ml-1 text-left">Nominal (Rp)</label>
-                <input type="number" id="modal_nominal" min="10000" placeholder="Min. 10.000" class="w-full px-6 py-4 rounded-2xl border border-slate-100 font-black text-slate-800 focus:border-[#147a54] outline-none text-lg shadow-inner" required>
-            </div>
-            <button type="submit" id="pay-button" class="w-full py-5 bg-[#147a54] text-white font-black rounded-3xl shadow-xl hover:bg-[#064e3b] transition-all flex items-center justify-center gap-3 active:scale-95 uppercase tracking-widest text-xs">
-                Lanjutkan Pembayaran
+<div id="modalDonasi" class="fixed inset-0 z-[120] hidden items-center justify-center p-4">
+    
+    {{-- Overlay --}}
+    <div class="absolute inset-0 bg-slate-900/70 backdrop-blur-md"
+         onclick="closeDonasiModal()"></div>
+    {{-- Modal --}}
+    <div class="relative w-full max-w-md bg-white rounded-[40px] shadow-2xl overflow-hidden animate-zoomIn">
+        {{-- Header --}}
+        <div class="relative px-8 pt-8 pb-6 bg-gradient-to-br from-[#147a54] to-[#0d5c3f] text-white">
+            <button onclick="closeDonasiModal()"
+                    class="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-all">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
+                          d="M6 18L18 6M6 6l12 12"/>
+                </svg>
             </button>
-        </form>
+            <p class="text-[10px] uppercase tracking-[0.3em] font-black text-green-100 mb-3">
+                Infaq & Donasi
+            </p>
+            <h3 class="text-3xl font-black leading-tight">
+                Salurkan Kebaikan
+            </h3>
+            <p id="namaKegiatanModal"
+               class="mt-3 text-sm text-green-100 font-semibold">
+            </p>
+        </div>
+        {{-- Body --}}
+        <div class="p-8">
+            <form id="donasiForm" class="space-y-6">
+                <input type="hidden" id="modal_id_kegiatan_hidden">
+                {{-- Nama --}}
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 ml-1">
+                        Nama Donatur
+                    </label>
+                    <input type="text"
+                           id="modal_nama"
+                           value="{{ Auth::user()->nama }}"
+                           readonly
+                           class="w-full h-14 px-5 rounded-2xl border border-slate-200 bg-slate-100 text-slate-500 font-bold text-sm cursor-not-allowed">
+                </div>
+                {{-- Nominal --}}
+                <div>
+                    <label class="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 block mb-3 ml-1">
+                        Nominal Donasi
+                    </label>
+                    <div class="relative">
+                        <span class="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">
+                            Rp
+                        </span>
+                        <input type="text"
+                               id="modal_nominal"
+                               min="10000"
+                               placeholder="50000"
+                               class="w-full h-16 pl-14 pr-5 rounded-2xl border-2 border-slate-100 bg-slate-50 text-2xl font-black tracking-tight focus:ring-4 focus:ring-green-500/10 focus:border-[#147a54] outline-none"
+                               required>
+                    </div>
+                    {{-- Quick Button --}}
+                    <div class="flex gap-2 mt-4 flex-wrap">
+                        <button type="button"
+                                onclick="setNominal(50000)"
+                                class="quick-btn">
+                            50rb
+                        </button>
+                        <button type="button"
+                                onclick="setNominal(100000)"
+                                class="quick-btn">
+                            100rb
+                        </button>
+                        <button type="button"
+                                onclick="setNominal(250000)"
+                                class="quick-btn">
+                            250rb
+                        </button>
+                        <button type="button"
+                                onclick="setNominal(500000)"
+                                class="quick-btn">
+                            500rb
+                        </button>
+                    </div>
+                    <p class="text-[10px] text-slate-400 mt-3 ml-1 italic">
+                        Minimal donasi Rp 10.000
+                    </p>
+                </div>
+                {{-- Button --}}
+                <div class="pt-2">
+                    <button type="submit"
+                            id="pay-button"
+                            class="w-full h-16 bg-[#147a54] hover:bg-[#0d5c3f] text-white rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-green-900/20 transition-all hover:-translate-y-1 active:scale-95">
+                        Bayar Sekarang
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 
@@ -205,6 +366,22 @@
             emptyMsg.classList.add('hidden');
         }
     }
+    function setNominal(nominal) {
+        document.getElementById('modal_nominal').value = new Intl.NumberFormat('id-ID').format(nominal);
+    }
+    function formatRupiah(angka) {
+    return new Intl.NumberFormat('id-ID').format(angka);
+    }
+
+    document.getElementById('modal_nominal').addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+
+        if(value){
+            e.target.value = formatRupiah(value);
+        } else {
+            e.target.value = '';
+        }
+    });
 
     function loadDetail(item, terkumpulFormatted, donaturArray) {
         const modal = document.getElementById('modalDetail');
@@ -247,7 +424,7 @@
                     <div class="flex items-center gap-3 text-left">
                         <div class="w-8 h-8 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center text-[10px] font-bold uppercase">${d.nama_donatur.charAt(0)}</div>
                         <div>
-                            <p class="text-xs font-black text-slate-800 uppercase">${d.nama_donatur}</p>
+                            <p class="text-xs font-black text-slate-800 uppercase">Donasi Masuk</p>
                             <p class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">Donatur Dermawan</p>
                         </div>
                     </div>
@@ -266,9 +443,22 @@
     function openDonasiModal(id, nama) {
         document.getElementById('modal_id_kegiatan_hidden').value = id;
         document.getElementById('namaKegiatanModal').innerText = nama;
-        document.getElementById('modalDonasi').classList.remove('hidden');
+
+        const modal = document.getElementById('modalDonasi');
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        document.body.style.overflow = 'hidden';
     }
-    function closeDonasiModal() { document.getElementById('modalDonasi').classList.add('hidden'); }
+    function closeDonasiModal() { 
+    const modal = document.getElementById('modalDonasi');
+
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+
+        document.body.style.overflow = 'auto';
+    }
 
     document.getElementById('donasiForm').onsubmit = function(e) {
         e.preventDefault();
@@ -281,7 +471,7 @@
             body: JSON.stringify({
                 id_kegiatan: document.getElementById('modal_id_kegiatan_hidden').value,
                 nama_donatur: "{{ Auth::user()->nama }}", 
-                nominal: document.getElementById('modal_nominal').value
+                nominal: document.getElementById('modal_nominal').value.replace(/\./g, '')
             })
         })
         .then(res => res.json())
@@ -302,5 +492,20 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
     @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
     .animate-zoomIn { animation: zoomIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+    .quick-btn{
+            padding:10px 18px;
+            border-radius:16px;
+            background:#f1f5f9;
+            font-size:11px;
+            font-weight:800;
+            color:#147a54;
+            transition:.3s;
+            text-transform:uppercase;
+            letter-spacing:.1em;
+        }
+        .quick-btn:hover{
+            background:#147a54;
+            color:white;
+        }
 </style>
 @endsection

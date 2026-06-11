@@ -12,8 +12,6 @@ class JadwalController extends Controller
     public function index()
     {
         $peserta = Auth::user()->peserta;
-        
-        // 1. Ambil Skema
         $skema = $peserta->skemaArisan; 
 
         if (!$skema) {
@@ -22,21 +20,23 @@ class JadwalController extends Controller
 
         $tenor = $skema->durasi_bulan; 
 
-        // 2. Ambil semua transaksi tanpa mempedulikan urutan input (created_at)
+        // 🌟 LOGIKA BARU: Tentukan Tanggal Mulai secara Dinamis lewat Hitung Mundur tahun_periode
+        $tahunTarget = $peserta->tahun_periode ?? Carbon::now()->year;
+        
+        $petaIdulAdha = [
+            2026 => 5, 2027 => 5, 2028 => 4, 2029 => 4, 2030 => 3
+        ];
+        $bulanIdulAdha = $petaIdulAdha[$tahunTarget] ?? 5;
+        $bulanLunas = $bulanIdulAdha - 1;
+
+        // Cari titik START awal menabung seharusnya
+        $tanggalJatuhTempoAkhir = Carbon::create($tahunTarget, $bulanLunas, 1);
+        $startDate = $tanggalJatuhTempoAkhir->copy()->subMonths($tenor - 1)->startOfMonth();
+
+        // Ambil data transaksi yang sudah riil terjadi di database
         $semuaTransaksi = TransaksiPembayaran::where('id_pesertaarisan', $peserta->id_pesertaarisan)->get();
 
-        // 3. LOGIKA PENTING: Cari Tanggal Mulai dari Nilai Bulan Iuran Paling Kecil
-        if ($semuaTransaksi->isNotEmpty()) {
-            // Kita map semua bulan_iuran ke Carbon, lalu cari yang paling minimal (paling lama)
-            $startDate = $semuaTransaksi->map(function ($item) {
-                return Carbon::parse($item->bulan_iuran)->startOfMonth();
-            })->min();
-        } else {
-            $startDate = Carbon::now()->startOfMonth();
-        }
-
-        // 4. Normalisasi data transaksi ke dalam array agar gampang dicari (Key: "n-Y")
-        // n = angka bulan tanpa nol (1-12), Y = tahun 4 digit
+        // Normalisasi data transaksi ke dalam array (Key: "n-Y")
         $transaksiMapped = [];
         foreach ($semuaTransaksi as $item) {
             try {
@@ -48,17 +48,15 @@ class JadwalController extends Controller
             }
         }
 
-        // 5. Looping berdasarkan durasi_bulan skema
+        // Looping simulasi berdasarkan durasi_bulan skema (12 atau 36)
         $daftarBulan = [];
         Carbon::setLocale('id');
 
         for ($i = 0; $i < $tenor; $i++) {
-            // Generate tanggal berurutan mulai dari yang paling lama
             $currentDate = $startDate->copy()->addMonths($i);
-            
             $searchKey = $currentDate->month . '-' . $currentDate->year;
             
-            // Cek apakah ada data di mapped transaksi
+            // Jika tagihannya belum di-generate oleh admin di database, nilainya otomatis null
             $dataTagihan = $transaksiMapped[$searchKey] ?? null;
 
             $daftarBulan[] = [
@@ -66,11 +64,11 @@ class JadwalController extends Controller
                 'bulan_nama' => $currentDate->translatedFormat('F'),
                 'short_nama' => $currentDate->translatedFormat('M'),
                 'tahun'      => $currentDate->year,
-                'tagihan'    => $dataTagihan, 
+                'tagihan'    => $dataTagihan, // Jika null, di blade nanti tampilkan "Belum Terbit" atau "-"
             ];
         }
 
-        // 6. Hitung Statistik
+        // Hitung Statistik Progres
         $totalLunas = $semuaTransaksi->where('status_pembayaran', 'sukses')->count();
         $progresPersen = $tenor > 0 ? ($totalLunas / $tenor) * 100 : 0;
         $tahunIni = Carbon::now()->year;
